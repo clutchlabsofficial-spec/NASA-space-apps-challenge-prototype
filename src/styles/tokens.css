@@ -1,4 +1,10 @@
 :root {
+  /* This page commits to a single dark world on purpose — a mission-control
+     screen. It paints its own ground and every colour explicitly, so it holds
+     whatever theme the host is in, and declares its scheme so scrollbars,
+     carets and text selection inside form controls match. */
+  color-scheme: dark;
+
   /* Non-negotiable palette */
   --bg: #050012;
   --card: #040121;

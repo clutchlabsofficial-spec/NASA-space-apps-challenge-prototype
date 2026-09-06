@@ -41,7 +41,7 @@ export default function MissionSelect({ mode, onPick, onRefs }) {
         <p style={{ marginTop: 14, color: 'var(--muted-dim)', fontSize: '0.88rem' }}>
           Every option in this app describes hardware that has genuinely flown, with figures taken from published NASA
           and mission sources.{' '}
-          <button onClick={onRefs} style={{ background: 'none', border: 0, color: 'var(--primary)', padding: 0, textDecoration: 'underline' }}>
+          <button className="linkbtn" onClick={onRefs}>
             See the full reference list
           </button>
         </p>

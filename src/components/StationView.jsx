@@ -1,4 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+// Smooth scrolling is a preference, not a given — and on a scroll-snap strip an
+// animated scroll the user did not ask for is actively disorienting.
+const scrollBehavior = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ? 'auto'
+    : 'smooth'
 import { STATIONS, visibleOptions, isCustom } from '../data/stations/index.js'
 import { briefingFor, notesTriggeredBy } from '../lib/consequences.js'
 import { t, Note, SourceChips } from './bits.jsx'
@@ -17,10 +24,19 @@ export default function StationView({ station, picks, mode, missionId, onPick, o
   const fired = pick ? notesTriggeredBy(station.id, picks) : []
   const allDone = STATIONS.every((s) => picks[s.id])
 
+  const railRef = useRef(null)
+
+  // On narrow screens the rail is a horizontal strip, so the active station has
+  // to be scrolled into view or it drifts off-screen as you advance.
+  useEffect(() => {
+    const active = railRef.current?.querySelector('.railitem--active')
+    active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: scrollBehavior() })
+  }, [station.id])
+
   // Opening a new station should not inherit the previous one's open card.
   useEffect(() => {
     setExpanded(typeof picks[station.id] === 'string' ? picks[station.id] : null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: scrollBehavior() })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station.id])
 
@@ -32,7 +48,7 @@ export default function StationView({ station, picks, mode, missionId, onPick, o
       {/* ---------------- station rail ---------------- */}
       <nav className="rail">
         <div className="rail__head label">{mode === 'explorer' ? 'Parts to build' : 'Subsystems'}</div>
-        <div className="rail__list">
+        <div className="rail__list" ref={railRef}>
           {STATIONS.map((s, i) => (
             <button
               key={s.id}
@@ -131,6 +147,11 @@ export default function StationView({ station, picks, mode, missionId, onPick, o
           {prev && (
             <button className="btn btn--bare" onClick={() => onGoto(prev.id)}>
               ← {t(prev.name, mode)}
+            </button>
+          )}
+          {allDone && next && (
+            <button className="btn btn--ghost station__finish" onClick={onFinish}>
+              {mode === 'explorer' ? 'See your satellite' : 'Flight readiness review'}
             </button>
           )}
           <span className="spacer" />

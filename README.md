@@ -204,6 +204,50 @@ perfectly good satellite carrying the wrong instrument, which is how real missio
   `src/data/vocab.js`. Adding a tag to a curated option automatically makes it available to
   inventions too; add a line to `TAG_GLOSSARY` so the model knows what it means.
 
+## Try it without installing anything
+
+A single-file build of the app is published as an Artifact and works on a phone,
+tablet, laptop or desktop:
+
+**https://claude.ai/code/artifact/c3c45ac3-1efa-419d-bdc1-f2296661646b**
+
+What works there and what does not:
+
+| | Published page | Run locally |
+|---|---|---|
+| Eleven subsystems, coupling rules, final review | ✅ | ✅ |
+| Both age modes, all sources | ✅ | ✅ |
+| Design your own — Claude reviews your idea | ✅ via the page's `sample` capability | ✅ via the proxy |
+| Sketch to 3D | ❌ the sandbox cannot reach Tripo | ✅ |
+
+`npm run build:artifact` regenerates it: `VITE_TARGET=artifact` stubs out the 3D
+viewer (~1 MB of engine a page that cannot reach Tripo would never use), and
+`scripts/build-artifact.mjs` inlines the CSS and bundle into one ~413 kB file.
+
+Both transports share `src/lib/prompt.js`, so the system prompt, the JSON schema
+and the tag vocabulary are identical whichever path a review takes.
+
+## Responsive
+
+One codebase from a 320px phone to a 2560px desktop, with three real layouts
+rather than a squeezed desktop:
+
+- **Phone** — single column. The satellite cutaway leads but is capped at 32vh,
+  the eleven-row manifest collapses behind a disclosure, and the subsystem rail
+  becomes a snap-scrolling strip that keeps the active station centred.
+- **Tablet** — single column at a comfortable measure, with the satellite and its
+  manifest side by side.
+- **Desktop** — the three-column mission-control view, widening again past 1700px.
+
+Tap targets are driven by **width**, not `pointer: coarse`: touchscreen laptops
+and hybrid tablets report a fine pointer, and emulators disagree with real
+hardware, so anything phone- or tablet-sized gets 44px targets and a coarse
+pointer at any width gets them too.
+
+`prefers-reduced-motion` is honoured in CSS *and* in JS — the rail's
+scroll-into-view and the page's scroll-to-top both check it, because a
+`behavior: 'smooth'` in script ignores the CSS media query.
+
 ## Visual system
 
 Dark mission-control UI. Chakra Petch (geometric technical display) paired with IBM Plex Mono

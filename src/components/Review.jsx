@@ -120,9 +120,8 @@ export default function Review({ missionId, picks, mode, onGoto, onRestart, onRe
                 return (
                   <button
                     key={s.id}
-                    className="manifest__row"
+                    className="manifest__row manifest__row--button"
                     onClick={() => onGoto(s.id)}
-                    style={{ background: 'none', border: 0, borderBottom: '1px solid var(--line-faint)', textAlign: 'left', width: '100%' }}
                   >
                     <span className="manifest__k">{s.code}</span>
                     <span className="manifest__v">

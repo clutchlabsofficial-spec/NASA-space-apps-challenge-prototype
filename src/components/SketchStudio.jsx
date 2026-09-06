@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { fileToDownscaledDataUrl, startSketch, pollSketch } from '../lib/api.js'
+import { fileToDownscaledDataUrl, startSketch, pollSketch, sketchSupported } from '../lib/api.js'
 import ModelViewer from './ModelViewer.jsx'
 
 const NOTICE_KEY = 'cubesat-sketch-notice-seen'
@@ -85,6 +85,21 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
       setError('That is taking longer than expected. Try again with a simpler drawing.')
       setStatus('error')
     }
+  }
+
+  // In the published standalone page there is no server to reach Tripo with,
+  // and saying so plainly beats a camera button that always fails.
+  if (!sketchSupported()) {
+    return (
+      <div className="sketch sketch--unavailable">
+        <span className="label">{label}</span>
+        <p>
+          {mode === 'explorer'
+            ? 'Turning your drawing into a spinning 3D model needs the full version of this app running on a computer. Everything else here works!'
+            : 'Sketch-to-3D needs the local server, which holds the Tripo credentials and can make the outbound call. Run the project locally to enable it — the rest of the build is unaffected.'}
+        </p>
+      </div>
+    )
   }
 
   if (!acknowledged) {

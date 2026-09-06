@@ -1,5 +1,18 @@
-// Thin client for the proxy. No keys ever reach the browser — every call goes
-// to our own server, which holds the credentials.
+// Two transports, one interface.
+//
+//  proxy    — the normal build. Calls our own Express server, which holds the
+//             Anthropic and Tripo keys. No key ever reaches the browser.
+//  artifact — the published standalone build. There is no server of ours, so
+//             idea review goes through the page's `sample` capability and
+//             sketch-to-3D is unavailable (the sandbox cannot reach Tripo).
+
+import { reviewIdeaViaSample } from './sampleClient.js'
+
+const IS_ARTIFACT = import.meta.env.VITE_TARGET === 'artifact'
+
+/** Sketch-to-3D needs an outbound call to Tripo, which only the server can make. */
+export const sketchSupported = () => !IS_ARTIFACT
+export const isArtifactBuild = () => IS_ARTIFACT
 
 const SESSION_KEY = 'cubesat-session-id'
 
@@ -40,7 +53,9 @@ async function get(path) {
 }
 
 export const health = () => get('/api/health')
-export const reviewIdea = (payload) => post('/api/idea', payload)
+
+export const reviewIdea = (payload) =>
+  IS_ARTIFACT ? reviewIdeaViaSample(payload) : post('/api/idea', payload)
 export const startSketch = (image) => post('/api/sketch', { image })
 export const pollSketch = (taskId) => get(`/api/sketch/${encodeURIComponent(taskId)}`)
 

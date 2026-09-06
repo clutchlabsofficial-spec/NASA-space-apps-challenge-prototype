@@ -148,6 +148,9 @@
   grid-template-columns: 1fr;
   padding-top: 26px;
 }
+/* Grid children default to min-width:auto, so a nowrap scroller inside one
+   forces the whole column — and the page — wider than the viewport. */
+.build > * { min-width: 0; }
 @media (min-width: 980px) {
   .build { grid-template-columns: 216px minmax(0, 1fr) 300px; align-items: start; }
 }
@@ -452,11 +455,6 @@
 .manifest__v { font-size: 0.8rem; line-height: 1.35; }
 .manifest__v--empty { color: var(--muted-dim); font-style: italic; }
 
-@media (max-width: 979px) {
-  .rail, .viewer { position: static; }
-  .build { grid-template-columns: 1fr; }
-  .viewer { order: -1; }
-}
 
 /* ============================ review ============================ */
 
@@ -731,3 +729,296 @@
   color: var(--muted-dim);
   font-size: 0.88rem;
 }
+
+/* =========================================================================
+   Responsive system
+   One codebase from a 320px phone to a 2560px desktop. Three real layouts:
+   phone (single column, station rail becomes a horizontal scroller),
+   tablet (single column, wider measure, two-up detail), and
+   desktop (the three-column mission-control view).
+   ========================================================================= */
+
+/* Nothing may ever push the page sideways. */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+.shell { width: 100%; }
+
+/* Long monospace values (source URLs, quoted figures) are the usual culprit. */
+.facts__v,
+.manifest__v,
+.invent__chip,
+.ref__url { overflow-wrap: anywhere; }
+
+/* Safe areas on notched phones. */
+@supports (padding: max(0px)) {
+  .topbar,
+  .footer,
+  .shell {
+    padding-left: max(var(--pad), env(safe-area-inset-left));
+    padding-right: max(var(--pad), env(safe-area-inset-right));
+  }
+  .footer { padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+}
+
+/* ---------------- below desktop: stack, and free the sticky panels -------- */
+
+@media (max-width: 1099px) {
+  .build { grid-template-columns: 1fr; }
+  .rail, .viewer { position: static; }
+  /* The satellite is the reason to keep scrolling, so it leads. */
+  .viewer { order: -1; }
+  .viewer__frame svg { max-height: 46vh; }
+
+  /* The station list becomes a thumb-scrollable strip. */
+  .rail__head { display: none; }
+  .rail__list {
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
+    margin: 0 calc(var(--pad) * -1);
+    padding-left: var(--pad);
+    padding-right: var(--pad);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .rail__list::-webkit-scrollbar { height: 3px; }
+  .rail__list::-webkit-scrollbar-thumb { background: var(--line); }
+
+  .railitem {
+    flex: 0 0 auto;
+    grid-template-columns: auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 14px;
+    border: 1px solid var(--line-faint);
+    background: var(--card);
+    scroll-snap-align: center;
+    min-height: 44px;
+  }
+  .railitem__name {
+    max-width: 30ch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .railitem__tick { display: none; }
+  .railitem--done { border-color: var(--bg-accent); }
+  .railitem--done .railitem__name::after { content: ' ✓'; color: var(--primary); }
+  .railitem--active { border-color: var(--primary); }
+
+  /* The finish button moves to the end of the page, where the thumb is. */
+  .rail__done { display: none; }
+}
+
+/* ---------------- tablet ---------------- */
+
+@media (min-width: 700px) and (max-width: 1099px) {
+  .build { max-width: 860px; margin: 0 auto; }
+  .viewer {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+}
+
+/* ---------------- phone ---------------- */
+
+@media (max-width: 699px) {
+  :root { --pad: 16px; }
+
+  body { font-size: 15px; }
+
+  /* Top bar: two tidy rows instead of five wrapped fragments. */
+  .topbar {
+    gap: 10px 12px;
+    padding: 10px var(--pad);
+  }
+  .topbar__brand { margin-right: auto; min-width: 0; }
+  .topbar__mark { font-size: 0.92rem; }
+  .topbar__progress { order: 3; width: 100%; }
+  .pips { flex: 1; }
+  .pip { flex: 1; width: auto; }
+  .modeswitch button { padding: 9px 12px; font-size: 0.62rem; }
+
+  .hero { padding: 28px 0 26px; }
+  .hero h1 { font-size: clamp(2rem, 9vw, 2.6rem); }
+  .hero__lede { font-size: 1rem; }
+
+  .missiongrid { grid-template-columns: 1fr; gap: 10px; }
+  .missioncard { padding: 18px; }
+
+  .station__title { font-size: clamp(1.5rem, 7vw, 2rem); }
+  .primer, .invent, .card { padding: 16px; }
+  .realtalk { flex-direction: column; gap: 6px; padding: 13px 15px; }
+
+  /* Option rows: the affordance moves under the text rather than fighting it. */
+  .option__bar {
+    grid-template-columns: 20px 1fr;
+    gap: 12px;
+    padding: 15px 15px;
+  }
+  .option__chev {
+    grid-column: 2;
+    padding-top: 8px;
+    color: var(--primary);
+  }
+  .option__name { font-size: 1rem; }
+  .detail { padding: 16px 15px 18px; }
+  .detail__grid, .tradeoffs { gap: 16px; }
+
+  .facts__row { padding: 10px 12px; }
+  .facts__v { font-size: 0.75rem; }
+
+  /* Every tap target clears 44px. */
+  .btn { padding: 13px 18px; min-height: 44px; }
+  .btn--bare { padding: 11px 14px; }
+
+  .station__nav { flex-wrap: wrap; }
+  .station__nav .btn { flex: 1 1 auto; justify-content: center; }
+  .station__nav .spacer { display: none; }
+
+  .invent__open { grid-template-columns: 22px 1fr; padding: 15px; }
+  .invent__go { grid-column: 2; }
+  .invent__row .btn { flex: 1 1 auto; justify-content: center; }
+  .invent__row .spacer { display: none; }
+
+  .modelviewer { height: 260px; }
+
+  .review__head h1 { font-size: clamp(1.7rem, 8vw, 2.3rem); }
+  .review__actions .btn { flex: 1 1 100%; justify-content: center; }
+
+  .footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .footer .mono:last-child { margin-left: 0 !important; }
+
+  .steps { grid-template-columns: 1fr; }
+}
+
+/* The finish button, shown inline on the page below desktop. */
+.station__finish { display: none; }
+@media (max-width: 1099px) {
+  .station__finish { display: inline-flex; }
+}
+
+/* ---------------- large desktop ---------------- */
+
+@media (min-width: 1700px) {
+  :root { --maxw: 1560px; }
+  .build { grid-template-columns: 260px minmax(0, 1fr) 400px; }
+  body { font-size: 17px; }
+}
+
+/* ---------------- pointer and motion preferences ---------------- */
+
+/* On touch there is no hover, so hover-only lift is noise. */
+@media (hover: none) {
+  .missioncard:hover { transform: none; }
+  .option__bar:hover { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Landscape phone: the sticky bar eats too much of a 380px-tall viewport. */
+@media (max-height: 460px) and (orientation: landscape) {
+  .topbar { position: static; }
+  .viewer__frame svg { max-height: 70vh; }
+}
+
+/* ---------------- touch targets ----------------
+   Anything tappable clears the 44px comfortable minimum on a coarse pointer.
+   Several of these are visually small on purpose (a ✕, a chip), so the hit area
+   grows rather than the ink. */
+
+/* Width-driven, because pointer detection is unreliable: touchscreen laptops
+   and hybrid tablets report a fine pointer, and emulators disagree with real
+   hardware. Anything phone- or tablet-sized gets comfortable targets, and a
+   coarse pointer at any width gets them too (the block after this one). */
+@media (max-width: 1099px), (pointer: coarse) {
+  .topbar__mark {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .modeswitch button { min-height: 44px; }
+  .invent__close {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
+  }
+  .footer button { min-height: 44px; display: inline-flex; align-items: center; }
+  .sourcechip { min-height: 40px; padding: 10px 14px; }
+  .sourcechips { gap: 8px; }
+  .option__bar { min-height: 56px; }
+  .manifest__row { min-height: 40px; }
+  .railitem { min-height: 48px; }
+}
+
+/* Buttons that should read as links or rows, kept in CSS rather than inline
+   styles so the responsive and touch rules can actually reach them. */
+.topbar__mark { background: none; border: 0; padding: 0; }
+.linkbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--primary);
+  text-decoration: underline;
+}
+.manifest__row--button {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line-faint);
+  text-align: left;
+  width: 100%;
+}
+@media (max-width: 1099px), (pointer: coarse) { .linkbtn { min-height: 44px; } }
+
+/* ---------------- collapsible manifest ---------------- */
+
+.manifest__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+}
+.manifest__summary::-webkit-details-marker { display: none; }
+.manifest__count { color: var(--primary); }
+.manifest[open] .manifest__summary { border-bottom: 1px solid var(--line-faint); }
+.manifest__summary::after {
+  content: '▾';
+  color: var(--bg-accent);
+  transition: transform .18s ease;
+}
+.manifest[open] .manifest__summary::after { transform: rotate(180deg); }
+
+/* On desktop the manifest is always open and the header is redundant chrome. */
+@media (min-width: 1100px) {
+  .manifest__summary { display: none; }
+  .manifest[open] .manifest__summary { border-bottom: 0; }
+}
+
+/* Phone: keep the satellite compact so the station content is reachable. */
+@media (max-width: 699px) {
+  .viewer__frame { padding: 10px; }
+  .viewer__frame svg { max-height: 32vh; }
+}
+
+.sketch--unavailable {
+  padding: 15px 17px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--bg);
+}
+.sketch--unavailable p { color: var(--muted); font-size: 0.92rem; margin: 8px 0 0; }

@@ -6,7 +6,7 @@ export default function TopBar({ mode, setMode, mission, picks, onHome, screen }
   return (
     <header className="topbar">
       <div className="topbar__brand">
-        <button className="topbar__mark" onClick={onHome} style={{ background: 'none', border: 0, padding: 0 }}>
+        <button className="topbar__mark" onClick={onHome}>
           CUBESAT<span>/</span>BUILDER
         </button>
         {mission && (
