@@ -1,4 +1,4 @@
-import { STATIONS, resolvePick, isCustom, tagsFor } from '../data/stations/index.js'
+import { STATIONS, resolvePicks, asList, isCustom, tagsFor, stationDone } from '../data/stations/index.js'
 import { getMission } from '../data/missions.js'
 import { flightNotes } from './consequences.js'
 
@@ -8,7 +8,7 @@ import { flightNotes } from './consequences.js'
 
 const T = (e, x) => ({ e, x })
 
-export const isComplete = (picks) => STATIONS.every((s) => picks[s.id])
+export const isComplete = (picks) => STATIONS.every((s) => stationDone(picks, s.id))
 
 // ---------------------------------------------------------------------------
 // What the spacecraft could actually do
@@ -26,11 +26,12 @@ const MISSION_CAPABILITY = {
 
 function capabilityClauses(picks, tags) {
   const out = []
-  const pl = typeof picks.payload === 'string' ? picks.payload : null
+  // A satellite may carry several instruments, so every one gets its say.
+  const payloads = asList(picks.payload)
+  const has = (id) => payloads.includes(id)
 
-  // An invented instrument describes itself, in Claude's words rather than ours.
-  if (isCustom(picks.payload)) {
-    const d = picks.payload
+  // Invented instruments describe themselves, in Claude's words rather than ours.
+  for (const d of payloads.filter(isCustom)) {
     out.push(T(d.summary, d.summary))
     if (d.realCounterpart) {
       out.push(T(
@@ -40,7 +41,7 @@ function capabilityClauses(picks, tags) {
     }
   }
 
-  if (pl === 'thermal-ir') {
+  if (has('thermal-ir')) {
     out.push(T(
       'Detect and map active fire fronts by their thermal emission — hardware of this class resolves hotspots down to roughly 4 m across, at around 200 m ground sampling, with about ±1 °C absolute temperature accuracy.',
       'Spot fires — even small ones, about the size of a bedroom — and measure how hot they are.',
@@ -50,7 +51,7 @@ function capabilityClauses(picks, tags) {
       'See at night and straight through smoke, because it looks for heat instead of light.',
     ))
   }
-  if (pl === 'vis-multispectral') {
+  if (has('vis-multispectral')) {
     out.push(T(
       'Image the ground at roughly 3–5 m resolution in visible and near-infrared bands — enough to see individual fields, buildings and roads.',
       'Take sharp photos where you can make out fields, roads and buildings.',
@@ -60,13 +61,13 @@ function capabilityClauses(picks, tags) {
       'Tell healthy plants from struggling ones, by looking at a colour our eyes cannot see.',
     ))
   }
-  if (pl === 'hyperspectral') {
+  if (has('hyperspectral')) {
     out.push(T(
       'Identify surface materials rather than just imaging them — distinguishing crop species, mineral types, water quality or gas plumes by their spectral signature.',
       'Work out what things are actually made of, not just what they look like.',
     ))
   }
-  if (pl === 'sdr-receiver') {
+  if (has('sdr-receiver')) {
     out.push(T(
       'Log AIS and ADS-B broadcasts from thousands of ships and aircraft per pass, over open ocean and airspace with no ground infrastructure at all.',
       'Hear thousands of ships and planes calling out their positions — even in the middle of the ocean.',
@@ -76,7 +77,7 @@ function capabilityClauses(picks, tags) {
       'Be taught to listen for something completely different after launch, just by sending it new software.',
     ))
   }
-  if (pl === 'gnss-ro') {
+  if (has('gnss-ro')) {
     out.push(T(
       'Produce vertical profiles of atmospheric temperature, pressure and humidity from GNSS signal bending — self-calibrating measurements that weather models can assimilate directly.',
       'Measure how warm and damp the air is, all the way up through the sky.',
@@ -86,13 +87,13 @@ function capabilityClauses(picks, tags) {
       'Work through clouds, at night and over the sea.',
     ))
   }
-  if (pl === 'particle-telescope') {
+  if (has('particle-telescope')) {
     out.push(T(
       'Measure the flux and energy of solar energetic particles and radiation-belt electrons along your orbit track — the same measurement class that produced peer-reviewed results from CSSWE and MinXSS.',
       'Count the tiny fast particles the Sun throws at Earth, and measure how much punch they carry.',
     ))
   }
-  if (pl === 'ka-radar') {
+  if (has('ka-radar')) {
     out.push(T(
       'See the internal vertical structure of precipitation — not just where clouds are, but where the rain is inside them, day or night.',
       'Look inside a storm and see where the rain actually is.',
@@ -112,7 +113,7 @@ function capabilityClauses(picks, tags) {
       'See most of the world, but never the very top or bottom — and the sunlight is different every time.',
     ))
   }
-  if (tags.has('orbit:low') && (pl === 'vis-multispectral' || pl === 'hyperspectral' || pl === 'thermal-ir')) {
+  if (tags.has('orbit:low') && (has('vis-multispectral') || has('hyperspectral') || has('thermal-ir'))) {
     out.push(T(
       'Get finer ground detail than the same optics would give from a higher orbit, simply because you are closer.',
       'See a bit more detail than usual, because you are flying lower.',
@@ -317,18 +318,22 @@ function disposal(tags) {
 
 function missionVerdict(missionId, picks, tags) {
   const mission = getMission(missionId)
-  const plOpt = resolvePick('payload', picks.payload)
+  const payloads = asList(picks.payload)
+  const plOpt = resolvePicks('payload', picks)[0] || null
+  const wanted = MISSION_CAPABILITY[missionId] || []
 
-  let fit
-  if (isCustom(picks.payload)) {
-    const wanted = MISSION_CAPABILITY[missionId] || []
-    const invented = picks.payload.tags || []
-    if (wanted.some((c) => invented.includes(c))) fit = 'ideal'
-    else if (invented.some((t) => t.startsWith('cap:'))) fit = 'partial'
-    else fit = 'no'
-  } else {
-    fit = mission.payloadFit[picks.payload] || 'no'
+  const fitOf = (pick) => {
+    if (isCustom(pick)) {
+      const invented = pick.tags || []
+      if (wanted.some((c) => invented.includes(c))) return 'ideal'
+      return invented.some((t) => t.startsWith('cap:')) ? 'partial' : 'no'
+    }
+    return mission.payloadFit[pick] || 'no'
   }
+
+  // Carrying one right instrument is what matters; the others are extra science.
+  const RANK = { ideal: 2, partial: 1, no: 0 }
+  const fit = payloads.reduce((best, p) => (RANK[fitOf(p)] > RANK[best] ? fitOf(p) : best), 'no')
 
   const base = {
     ideal: T(
@@ -377,7 +382,7 @@ function missionVerdict(missionId, picks, tags) {
     ))
   }
 
-  if (isCustom(picks.payload)) {
+  if (payloads.some(isCustom)) {
     blockers.unshift(
       fit === 'no'
         ? T(
@@ -389,6 +394,13 @@ function missionVerdict(missionId, picks, tags) {
             'This is your own invention, judged on what it can really do.',
           ),
     )
+  }
+
+  if (payloads.length > 1) {
+    blockers.push(T(
+      `You are flying ${payloads.length} instruments. Real multi-instrument CubeSats exist, but every extra instrument competes for the same power, the same downlink and the same volume — the review above already accounts for that.`,
+      `You put ${payloads.length} tools on your satellite! Real satellites do that too — but they all have to share the same electricity and the same radio.`,
+    ))
   }
 
   return { fit, base, blockers, plOpt, mission }

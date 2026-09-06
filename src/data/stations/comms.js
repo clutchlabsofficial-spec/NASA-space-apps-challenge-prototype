@@ -1,5 +1,6 @@
 export const comms = {
   id: 'comms',
+  multi: true,
   order: 9,
   code: 'COM',
   name: { e: 'Communications', x: 'Talking to Earth' },

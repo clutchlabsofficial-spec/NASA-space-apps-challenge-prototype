@@ -52,7 +52,31 @@ Implementation notes:
 - The analysis is written for the age mode that was active when it was requested. Switching mode
   offers to rewrite it rather than silently showing the wrong register.
 
-## Sketch to 3D — Tripo AI
+## Sketch to 3D — read by Claude, built in the browser
+
+Two places: **any part** once a child has adopted their own design, and **the whole
+satellite** at the end, beside the engineering review.
+
+There is no mesh-generation service in the loop. Claude reads the drawing as an
+engineering sketch and returns a parts list in a constrained vocabulary of shapes
+(`box`, `panel`, `cylinder`, `dish`, `rod`, `sphere`, `cone`) with positions,
+sizes and materials; `Model3D.jsx` assembles it in three.js. Hover or tap a part
+and it names itself.
+
+This is the better answer for this app, not a workaround:
+
+- **It works everywhere**, including the published page, which cannot reach any
+  third-party host.
+- **A child's felt-tip drawing becomes a clean, readable spacecraft with named
+  parts**, rather than the lumpy mesh photogrammetry gives you from a crayon
+  sketch.
+- No per-model cost, no five-minute expiring URLs, no upload endpoint to keep
+  working.
+
+`sanitiseModel` clamps every position and size before anything reaches the
+renderer — a model that flies off to infinity is worse than no model.
+
+## Optional: photogrammetry via Tripo AI
 
 Two places, both opt-in:
 
@@ -60,6 +84,10 @@ Two places, both opt-in:
   the drawing of it and get a 3D model of that part.
 - **The whole satellite, at the end** — next to the honest engineering review, they draw how they
   picture their finished spacecraft and it comes back as a mesh they can orbit.
+
+`server/tripo.js` and the `/api/sketch` routes remain for local experimentation
+with real photogrammetry meshes. They are **not wired into the UI** — the
+in-browser builder above is the path the app uses.
 
 Uses Tripo v3 (`openapi.tripo3d.ai/v3`): upload the image for a file token, `POST
 /generation/image-to-model`, poll `GET /tasks/{id}` every 2.5s. **Tripo v2 retires on
@@ -218,14 +246,48 @@ What works there and what does not:
 | Eleven subsystems, coupling rules, final review | ✅ | ✅ |
 | Both age modes, all sources | ✅ | ✅ |
 | Design your own — Claude reviews your idea | ✅ via the page's `sample` capability | ✅ via the proxy |
-| Sketch to 3D | ❌ the sandbox cannot reach Tripo | ✅ |
+| Sketch to 3D | ✅ | ✅ |
 
-`npm run build:artifact` regenerates it: `VITE_TARGET=artifact` stubs out the 3D
-viewer (~1 MB of engine a page that cannot reach Tripo would never use), and
-`scripts/build-artifact.mjs` inlines the CSS and bundle into one ~413 kB file.
+`npm run build:artifact` regenerates it: `VITE_TARGET=artifact` switches the AI
+transport to the page's own capability and `scripts/build-artifact.mjs` inlines
+the CSS and bundle into one file.
 
 Both transports share `src/lib/prompt.js`, so the system prompt, the JSON schema
 and the tag vocabulary are identical whichever path a review takes.
+
+## Choosing many
+
+Real spacecraft combine hardware inside a subsystem — magnetorquers *and*
+reaction wheels, coatings *and* MLI *and* survival heaters, a UHF beacon
+alongside an X-band downlink. So seven of the eleven stations are multi-select
+(`multi: true` in the station data) and the other four stay exclusive, because
+you fly one orbit in one chassis.
+
+A station therefore holds an **array** of picks, each either a curated option id
+or an invention. `resolvePicks`, `tagsFor` and `visualIdsFor` are the only places
+that need to know, so the coupling rules, the review and the cutaway drawing all
+handle combinations without special cases — pick magnetorquers and wheels and the
+drawing shows both.
+
+## The game layer
+
+The interaction model is Duolingo's, rendered in this project's own palette
+rather than Duolingo's:
+
+- **A build path** of eleven nodes in a one-directional serpentine, with the
+  satellite growing at the top and the next stop calling itself out.
+- **Nova**, a small CubeSat mascot who introduces each subsystem and reacts to
+  what you draw. Nova is the same kind of object the child is designing, which is
+  why the mascot can name its own parts.
+- **Chunky keys** with a solid bottom lip that depresses on press — no blur, no
+  gradient.
+- **A pinned action bar**, so there is always exactly one obvious next thing.
+- **XP** awarded for real work: deciding a subsystem, inventing a part, drawing
+  your satellite. Never for time spent.
+
+Two motion decisions worth keeping: the "next up" node pulses three times and
+then stops, because an endlessly pulsing target is tiring and hard to tap
+confidently; and everything animated is disabled under `prefers-reduced-motion`.
 
 ## Responsive
 

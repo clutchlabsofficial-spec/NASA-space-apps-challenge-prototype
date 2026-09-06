@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { reviewIdea, STATION_IDS } from './claude.js'
+import { reviewIdea, describeSketch, STATION_IDS } from './claude.js'
 import { uploadImage, createImageToModelTask, getTask, downloadModel, tripoConfigured } from './tripo.js'
 import { rateLimit, chargeIdea, chargeModel, refundModel, budget } from './guard.js'
 
@@ -87,7 +87,31 @@ app.post('/api/idea', wrap(async (req, res) => {
   res.json({ ...result, spend })
 }))
 
-/** Turn a photographed sketch into a 3D model via Tripo. */
+/** Read a drawing and return it as a 3D parts list the browser assembles. */
+app.post('/api/sketch3d', wrap(async (req, res) => {
+  const sessionId = sessionOf(req)
+  rateLimit(sessionId)
+
+  const img = decodeImage(req.body?.image)
+  if (!img) throw Object.assign(new Error('Add a photo of your drawing first'), { status: 400 })
+
+  const spend = chargeModel(sessionId)
+  try {
+    const model = await describeSketch({
+      imageBase64: img.base64,
+      imageMediaType: img.mediaType,
+      mode: req.body?.mode === 'explorer' ? 'explorer' : 'engineer',
+      context: typeof req.body?.context === 'string' ? req.body.context.slice(0, 2000) : '',
+    })
+    res.json({ ...model, spend })
+  } catch (err) {
+    refundModel(sessionId)
+    throw err
+  }
+}))
+
+/** Optional: photogrammetry-style meshes via Tripo. Local only — a published
+ *  page cannot reach a third-party host, which is why /api/sketch3d exists. */
 app.post('/api/sketch', wrap(async (req, res) => {
   const sessionId = sessionOf(req)
   rateLimit(sessionId)

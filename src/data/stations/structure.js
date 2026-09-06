@@ -1,5 +1,6 @@
 export const structure = {
   id: 'structure',
+  multi: false,
   order: 3,
   code: 'STR',
   name: { e: 'Structure & Mechanisms', x: 'The Frame' },

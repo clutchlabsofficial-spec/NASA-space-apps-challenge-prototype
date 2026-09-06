@@ -1,5 +1,5 @@
 import { buildReview, NEXT_STEPS } from '../lib/review.js'
-import { STATIONS, resolvePick } from '../data/stations/index.js'
+import { STATIONS, resolvePicks } from '../data/stations/index.js'
 import { t, Note, SourceChips } from './bits.jsx'
 import CubeSatSVG from './CubeSatSVG.jsx'
 import SketchStudio from './SketchStudio.jsx'
@@ -10,9 +10,16 @@ const FIT_STAMP = {
   no: { e: 'Wrong instrument', x: 'Wrong tool' },
 }
 
-export default function Review({ missionId, picks, mode, onGoto, onRestart, onRefs, wholeModel, onWholeModel }) {
+export default function Review({ missionId, picks, mode, xp, onGoto, onRestart, onRefs, wholeModel, onWholeModel }) {
   const r = buildReview(missionId, picks)
   const mission = r.mission.mission
+  // Give the drawing reader the actual build, so the model it makes matches
+  // the satellite the child designed rather than a generic one.
+  const buildContext = STATIONS.map((s) => {
+    const chosen = resolvePicks(s.id, picks).map((o) => o.name.e)
+    return chosen.length ? `${s.name.e}: ${chosen.join(' + ')}` : null
+  }).filter(Boolean).join('\n')
+
   const good = r.notes.filter((n) => n.kind === 'good')
   const tensions = r.notes.filter((n) => n.kind === 'tension')
   const blockers = r.notes.filter((n) => n.kind === 'blocker')
@@ -107,6 +114,7 @@ export default function Review({ missionId, picks, mode, onGoto, onRestart, onRe
             <SketchStudio
               mode={mode}
               label={mode === 'explorer' ? 'Your satellite, in 3D' : 'Whole spacecraft — sketch to 3D'}
+              context={buildContext}
               existingModel={wholeModel}
               onModel={onWholeModel}
             />
@@ -116,7 +124,7 @@ export default function Review({ missionId, picks, mode, onGoto, onRestart, onRe
             <span className="label">{mode === 'explorer' ? 'Your parts list' : 'Configuration manifest'}</span>
             <div className="manifest manifest--review">
               {STATIONS.map((s) => {
-                const opt = resolvePick(s.id, picks[s.id])
+                const chosen = resolvePicks(s.id, picks)
                 return (
                   <button
                     key={s.id}
@@ -125,8 +133,14 @@ export default function Review({ missionId, picks, mode, onGoto, onRestart, onRe
                   >
                     <span className="manifest__k">{s.code}</span>
                     <span className="manifest__v">
-                      {opt ? t(opt.name, mode) : '—'}
-                      {opt?.custom && <span className="manifest__own">yours</span>}
+                      {chosen.length
+                        ? chosen.map((o) => (
+                            <span key={o.id} className="manifest__item">
+                              {t(o.name, mode)}
+                              {o.custom && <span className="manifest__own">yours</span>}
+                            </span>
+                          ))
+                        : '—'}
                     </span>
                   </button>
                 )

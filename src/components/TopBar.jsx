@@ -1,31 +1,52 @@
-import { STATIONS } from '../data/stations/index.js'
+import { useEffect, useState } from 'react'
 
-export default function TopBar({ mode, setMode, mission, picks, onHome, screen }) {
-  const done = STATIONS.filter((s) => picks[s.id]).length
+/** A floating "+20 XP" that acknowledges the work and gets out of the way. */
+function XpToast({ toast, onDone }) {
+  const [leaving, setLeaving] = useState(false)
+
+  useEffect(() => {
+    if (!toast) return
+    setLeaving(false)
+    const a = setTimeout(() => setLeaving(true), 1600)
+    const b = setTimeout(onDone, 2200)
+    return () => {
+      clearTimeout(a)
+      clearTimeout(b)
+    }
+  }, [toast, onDone])
+
+  if (!toast) return null
+  return (
+    <div className={`xptoast ${leaving ? 'xptoast--out' : ''}`} key={toast.id} role="status">
+      <span className="xptoast__amount">+{toast.amount} XP</span>
+      <span className="xptoast__label">{toast.label}</span>
+    </div>
+  )
+}
+
+export default function TopBar({ mode, setMode, mission, screen, built, total, parts, xp, toast, onClearToast, onHome }) {
+  const showStats = Boolean(mission) && screen !== 'mission'
 
   return (
     <header className="topbar">
-      <div className="topbar__brand">
-        <button className="topbar__mark" onClick={onHome}>
-          CUBESAT<span>/</span>BUILDER
-        </button>
-        {mission && (
-          <div className="topbar__mission mono">
-            <span style={{ color: 'var(--primary)' }}>{mission.codename}</span>
-            <span>·</span>
-            <span>{mode === 'explorer' ? mission.name.x : mission.name.e}</span>
-          </div>
-        )}
-      </div>
+      <button className="topbar__mark" onClick={onHome}>
+        CUBESAT<span>/</span>BUILDER
+      </button>
 
-      {mission && screen !== 'mission' && (
-        <div className="topbar__progress">
-          <span className="label">{done}/{STATIONS.length}</span>
-          <div className="pips">
-            {STATIONS.map((s) => (
-              <span key={s.id} className={`pip ${picks[s.id] ? 'pip--done' : ''}`} title={s.code} />
-            ))}
-          </div>
+      {showStats && (
+        <div className="stats" aria-label="Your progress">
+          <span className="stat" title="Subsystems built">
+            <span className="stat__icon" aria-hidden="true">🛰️</span>
+            <span className="stat__value">{built}/{total}</span>
+          </span>
+          <span className="stat" title="Parts fitted">
+            <span className="stat__icon" aria-hidden="true">🔧</span>
+            <span className="stat__value">{parts}</span>
+          </span>
+          <span className="stat stat--xp" title="Experience points">
+            <span className="stat__icon" aria-hidden="true">⚡</span>
+            <span className="stat__value">{xp}</span>
+          </span>
         </div>
       )}
 
@@ -37,9 +58,8 @@ export default function TopBar({ mode, setMode, mission, picks, onHome, screen }
           Engineer
         </button>
       </div>
-      <span className="modeswitch__hint">
-        {mode === 'explorer' ? 'Ages under 11 · simpler words, same facts' : 'Ages 11–18 · full vocabulary, more options'}
-      </span>
+
+      <XpToast toast={toast} onDone={onClearToast} />
     </header>
   )
 }

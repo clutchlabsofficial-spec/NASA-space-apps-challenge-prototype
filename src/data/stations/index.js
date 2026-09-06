@@ -29,16 +29,23 @@ export const getStation = (id) => STATIONS.find((s) => s.id === id)
 export const getOption = (stationId, optionId) =>
   getStation(stationId)?.options.find((o) => o.id === optionId)
 
-// A pick is either the id of a curated option, or a child's own invention
-// returned by Claude. Everything downstream — the coupling rules, the manifest,
-// the final review — goes through this so it never has to care which.
+// A station holds an ARRAY of picks. Real spacecraft combine hardware within a
+// subsystem — magnetorquers and reaction wheels, coatings and MLI and heaters —
+// so multi-select is the honest model, and single-select stations simply hold an
+// array of one. Each entry is either a curated option id or a child's own
+// invention returned by Claude.
 export const isCustom = (pick) => Boolean(pick) && typeof pick === 'object' && pick.kind === 'custom'
 
-export function resolvePick(stationId, pick) {
+/** Always an array, whatever shape the caller has. */
+export const asList = (value) => (value == null ? [] : Array.isArray(value) ? value : [value])
+
+export const pickKey = (pick) => (isCustom(pick) ? `custom:${pick.name}` : pick)
+
+function resolveOne(stationId, pick) {
   if (!pick) return null
   if (isCustom(pick)) {
     return {
-      id: 'custom',
+      id: pickKey(pick),
       custom: true,
       name: { e: pick.name, x: pick.name },
       blurb: { e: pick.summary, x: pick.summary },
@@ -49,6 +56,18 @@ export function resolvePick(stationId, pick) {
   const opt = getOption(stationId, pick)
   return opt ? { ...opt, custom: false } : null
 }
+
+/** Every resolved choice at a station. */
+export const resolvePicks = (stationId, picks) =>
+  asList(picks?.[stationId]).map((p) => resolveOne(stationId, p)).filter(Boolean)
+
+/** The first choice at a station — for places that can only show one thing. */
+export const resolvePick = (stationId, value) => resolveOne(stationId, asList(value)[0])
+
+export const isChosen = (picks, stationId, optionId) =>
+  asList(picks?.[stationId]).some((p) => pickKey(p) === optionId)
+
+export const stationDone = (picks, stationId) => asList(picks?.[stationId]).length > 0
 
 /**
  * The closest curated option to an invention, by tag overlap. Used only to
@@ -80,16 +99,20 @@ export const visibleOptions = (station, mode) =>
 // final review can ask simple questions of the whole spacecraft at once.
 export const tagsFor = (picks) => {
   const tags = new Set()
-  for (const [stationId, pick] of Object.entries(picks)) {
-    const resolved = resolvePick(stationId, pick)
-    if (resolved) resolved.tags.forEach((t) => tags.add(t))
+  for (const stationId of Object.keys(picks || {})) {
+    for (const resolved of resolvePicks(stationId, picks)) {
+      resolved.tags.forEach((t) => tags.add(t))
+    }
   }
   return tags
 }
 
-/** The curated-option id to draw for a station, custom picks included. */
-export function visualIdFor(stationId, pick) {
-  if (!pick) return null
-  if (isCustom(pick)) return nearestCuratedOption(stationId, pick.tags)?.id ?? null
-  return pick
+/** Curated-option ids to draw for a station, inventions mapped to their nearest. */
+export function visualIdsFor(stationId, value) {
+  return asList(value)
+    .map((pick) => (isCustom(pick) ? nearestCuratedOption(stationId, pick.tags)?.id ?? null : pick))
+    .filter(Boolean)
 }
+
+export const totalPicks = (picks) =>
+  Object.keys(picks || {}).reduce((n, sid) => n + asList(picks[sid]).length, 0)

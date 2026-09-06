@@ -1,5 +1,6 @@
 export const power = {
   id: 'power',
+  multi: true,
   order: 4,
   code: 'EPS',
   name: { e: 'Power — Solar Arrays & EPS', x: 'Making Electricity' },

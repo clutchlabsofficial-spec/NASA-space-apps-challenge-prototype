@@ -1,5 +1,6 @@
 export const adcs = {
   id: 'adcs',
+  multi: true,
   order: 7,
   code: 'ADCS',
   name: { e: 'ADCS — Attitude Determination & Control', x: 'Pointing the Right Way' },

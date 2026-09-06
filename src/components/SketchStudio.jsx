@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
-import { fileToDownscaledDataUrl, startSketch, pollSketch, sketchSupported } from '../lib/api.js'
-import ModelViewer from './ModelViewer.jsx'
+import { useRef, useState } from 'react'
+import { fileToDownscaledDataUrl, describeSketch } from '../lib/api.js'
+import Model3D from './Model3D.jsx'
+import { MascotSays } from './Mascot.jsx'
 
 const NOTICE_KEY = 'cubesat-sketch-notice-seen'
 
 /**
- * Photograph a drawing, send it to Tripo, get a spinning 3D model back.
+ * Draw it, photograph it, watch it become a 3D model you can spin.
  * The notice is shown once per browser and is deliberately about what leaves
  * the device, because at a public booth the person tapping this is a child.
  */
-export default function SketchStudio({ mode, label, onModel, existingModel, disabled }) {
+export default function SketchStudio({ mode, label, context, existingModel, onModel }) {
   const [acknowledged, setAcknowledged] = useState(() => {
     try {
       return sessionStorage.getItem(NOTICE_KEY) === '1'
@@ -18,22 +19,12 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
     }
   })
   const [preview, setPreview] = useState(null)
-  const [status, setStatus] = useState('idle') // idle | working | done | error
-  const [progress, setProgress] = useState(0)
+  const [status, setStatus] = useState(existingModel ? 'done' : 'idle')
   const [error, setError] = useState(null)
-  const [modelPath, setModelPath] = useState(existingModel || null)
+  const [model, setModel] = useState(existingModel || null)
+  const [hovered, setHovered] = useState(null)
   const fileInput = useRef(null)
   const cameraInput = useRef(null)
-  const cancelled = useRef(false)
-
-  // StrictMode mounts, unmounts and remounts in development. Without resetting
-  // the flag on mount, the first cleanup would cancel every later poll loop.
-  useEffect(() => {
-    cancelled.current = false
-    return () => {
-      cancelled.current = true
-    }
-  }, [])
 
   const acknowledge = () => {
     setAcknowledged(true)
@@ -48,58 +39,17 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
     if (!file) return
     setError(null)
     setStatus('working')
-    setProgress(0)
     try {
       const dataUrl = await fileToDownscaledDataUrl(file)
       setPreview(dataUrl)
-      const { taskId } = await startSketch(dataUrl)
-      await watch(taskId)
+      const built = await describeSketch({ image: dataUrl, mode, context })
+      setModel(built)
+      setStatus('done')
+      onModel?.(built)
     } catch (err) {
       setError(err.message)
       setStatus('error')
     }
-  }
-
-  async function watch(taskId) {
-    // Tripo's own guidance is to poll every couple of seconds; generation
-    // typically takes 10-120s.
-    const deadline = Date.now() + 4 * 60 * 1000
-    while (!cancelled.current && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 2500))
-      if (cancelled.current) return
-      const res = await pollSketch(taskId)
-      setProgress(res.progress || 0)
-      if (res.status === 'success') {
-        setModelPath(res.modelPath)
-        setStatus('done')
-        onModel?.(res.modelPath)
-        return
-      }
-      if (res.status === 'failed') {
-        setError(res.error || 'That did not work')
-        setStatus('error')
-        return
-      }
-    }
-    if (!cancelled.current) {
-      setError('That is taking longer than expected. Try again with a simpler drawing.')
-      setStatus('error')
-    }
-  }
-
-  // In the published standalone page there is no server to reach Tripo with,
-  // and saying so plainly beats a camera button that always fails.
-  if (!sketchSupported()) {
-    return (
-      <div className="sketch sketch--unavailable">
-        <span className="label">{label}</span>
-        <p>
-          {mode === 'explorer'
-            ? 'Turning your drawing into a spinning 3D model needs the full version of this app running on a computer. Everything else here works!'
-            : 'Sketch-to-3D needs the local server, which holds the Tripo credentials and can make the outbound call. Run the project locally to enable it — the rest of the build is unaffected.'}
-        </p>
-      </div>
-    )
   }
 
   if (!acknowledged) {
@@ -108,14 +58,12 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
         <span className="label">{mode === 'explorer' ? 'Before you take a photo' : 'Before you use the camera'}</span>
         <p>
           {mode === 'explorer'
-            ? 'Take a photo of your drawing — not of people. Your picture gets sent to a computer somewhere else that turns drawings into 3D models, and then it is thrown away. It is not saved and nobody keeps it.'
-            : 'Photograph your drawing, not people. The image is sent to Tripo AI to be converted into a 3D model and to Claude to be read as an engineering sketch. Nothing is stored on our server, and the model is deleted an hour after it is made.'}
+            ? 'Take a photo of your drawing — not of people. Claude looks at the picture to work out what you drew, then it is thrown away. It is not saved and nobody keeps it.'
+            : 'Photograph your drawing, not people. The image is sent to Claude to be read as an engineering sketch and is not stored anywhere.'}
         </p>
-        <div className="sketch__row">
-          <button className="btn" onClick={acknowledge}>
-            {mode === 'explorer' ? 'Got it' : 'Understood'}
-          </button>
-        </div>
+        <button className="btn" onClick={acknowledge}>
+          {mode === 'explorer' ? 'Got it' : 'Understood'}
+        </button>
       </div>
     )
   }
@@ -128,25 +76,18 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
         <>
           <p className="sketch__hint">
             {mode === 'explorer'
-              ? 'Draw it on plain paper with a dark pen, then take a photo from straight above.'
-              : 'A dark line drawing on plain paper, photographed square-on in even light, converts far better than a shaded sketch.'}
+              ? 'Draw it big, with a dark pen, then take a photo from straight above.'
+              : 'A bold line drawing photographed square-on reads far better than a shaded sketch.'}
           </p>
           <div className="sketch__row">
-            <button className="btn btn--ghost" onClick={() => cameraInput.current?.click()} disabled={disabled || status === 'working'}>
+            <button className="btn btn--big" onClick={() => cameraInput.current?.click()} disabled={status === 'working'}>
               📷 {mode === 'explorer' ? 'Take a photo' : 'Use camera'}
             </button>
-            <button className="btn btn--bare" onClick={() => fileInput.current?.click()} disabled={disabled || status === 'working'}>
+            <button className="btn btn--bare" onClick={() => fileInput.current?.click()} disabled={status === 'working'}>
               {mode === 'explorer' ? 'Pick a picture' : 'Upload a file'}
             </button>
           </div>
-          <input
-            ref={cameraInput}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
+          <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
           <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
         </>
       )}
@@ -158,12 +99,10 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
       )}
 
       {status === 'working' && (
-        <div className="sketch__progress">
-          <div className="sketch__bar">
-            <span style={{ width: `${Math.max(6, progress)}%` }} />
-          </div>
+        <div className="sketch__working">
+          <span className="sketch__spinner" aria-hidden="true" />
           <span className="mono">
-            {mode === 'explorer' ? 'Building your 3D model…' : 'Generating mesh…'} {progress}%
+            {mode === 'explorer' ? 'Looking at your drawing…' : 'Reading the sketch and rebuilding it…'}
           </span>
         </div>
       )}
@@ -171,20 +110,33 @@ export default function SketchStudio({ mode, label, onModel, existingModel, disa
       {status === 'error' && (
         <div className="sketch__error">
           <p>{error}</p>
-          <button className="btn btn--bare" onClick={() => setStatus('idle')}>
+          <button className="btn btn--bare" onClick={() => { setStatus('idle'); setError(null) }}>
             Try again
           </button>
         </div>
       )}
 
-      {status === 'done' && modelPath && (
+      {status === 'done' && model && (
         <div className="sketch__result">
-          <ModelViewer src={modelPath} alt="A 3D model made from your drawing" poster={preview} />
-          <div className="sketch__row">
-            <span className="label">{mode === 'explorer' ? 'Drag it to spin it around' : 'Drag to orbit · scroll to zoom'}</span>
-            <button className="btn btn--bare" onClick={() => { setStatus('idle'); setPreview(null) }}>
+          {model.reading && (
+            <MascotSays mood="excited" size={62}>{model.reading}</MascotSays>
+          )}
+          <h4 className="sketch__name">{model.name}</h4>
+          <Model3D model={model} onPartHover={setHovered} />
+          <div className="sketch__row sketch__row--under">
+            <span className="label">
+              {hovered
+                ? `▸ ${hovered}`
+                : mode === 'explorer' ? 'Drag it to spin · touch a part to name it' : 'Drag to orbit · hover a part to name it'}
+            </span>
+            <button className="btn btn--bare" onClick={() => { setStatus('idle'); setPreview(null); setModel(null) }}>
               {mode === 'explorer' ? 'Draw another' : 'Replace'}
             </button>
+          </div>
+          <div className="sketch__parts">
+            {model.parts.map((p, i) => (
+              <span key={i} className="sketch__part mono">{p.label}</span>
+            ))}
           </div>
         </div>
       )}

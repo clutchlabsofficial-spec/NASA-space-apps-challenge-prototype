@@ -1,5 +1,6 @@
 import { MISSIONS } from '../data/missions.js'
 import { t, SourceChips } from './bits.jsx'
+import { MascotSays } from './Mascot.jsx'
 
 export default function MissionSelect({ mode, onPick, onRefs }) {
   return (
@@ -17,6 +18,12 @@ export default function MissionSelect({ mode, onPick, onRefs }) {
             : 'Real engineers do not start with a satellite. They start with a question, then build the smallest spacecraft that can answer it. Pick your mission, then work through every subsystem — structure, power, brain, pointing, thermal, comms, propulsion — choosing between approaches that real CubeSats actually fly.'}
         </p>
       </section>
+
+      <MascotSays mood="excited" highlight={mode === 'explorer' ? 'Hi! I am Nova.' : 'Nova, mission planning.'}>
+        {mode === 'explorer'
+          ? 'I am a real little satellite. Pick a job for YOUR satellite and we will build it together — one piece at a time.'
+          : 'Every real mission starts with a question, not a spacecraft. Choose the question yours will answer and the whole design follows from it.'}
+      </MascotSays>
 
       <div className="label" style={{ marginBottom: 10 }}>
         {mode === 'explorer' ? 'Choose a job for your satellite' : 'Select mission objective'}

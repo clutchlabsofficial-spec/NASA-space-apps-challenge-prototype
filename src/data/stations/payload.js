@@ -1,5 +1,6 @@
 export const payload = {
   id: 'payload',
+  multi: true,
   order: 2,
   code: 'PL',
   name: { e: 'Payload — the Instrument', x: 'The Job Tool' },

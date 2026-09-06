@@ -6,12 +6,10 @@
 //             idea review goes through the page's `sample` capability and
 //             sketch-to-3D is unavailable (the sandbox cannot reach Tripo).
 
-import { reviewIdeaViaSample } from './sampleClient.js'
+import { reviewIdeaViaSample, describeSketchViaSample } from './sampleClient.js'
 
 const IS_ARTIFACT = import.meta.env.VITE_TARGET === 'artifact'
 
-/** Sketch-to-3D needs an outbound call to Tripo, which only the server can make. */
-export const sketchSupported = () => !IS_ARTIFACT
 export const isArtifactBuild = () => IS_ARTIFACT
 
 const SESSION_KEY = 'cubesat-session-id'
@@ -56,8 +54,12 @@ export const health = () => get('/api/health')
 
 export const reviewIdea = (payload) =>
   IS_ARTIFACT ? reviewIdeaViaSample(payload) : post('/api/idea', payload)
-export const startSketch = (image) => post('/api/sketch', { image })
-export const pollSketch = (taskId) => get(`/api/sketch/${encodeURIComponent(taskId)}`)
+/**
+ * Turn a photographed drawing into a 3D parts list. Claude reads the sketch;
+ * the page assembles the model. Works identically in both builds.
+ */
+export const describeSketch = (payload) =>
+  IS_ARTIFACT ? describeSketchViaSample(payload) : post('/api/sketch3d', payload)
 
 /**
  * Downscale before upload. A modern phone photo is several megabytes; Tripo and

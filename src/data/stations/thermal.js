@@ -1,5 +1,6 @@
 export const thermal = {
   id: 'thermal',
+  multi: true,
   order: 8,
   code: 'TCS',
   name: { e: 'Thermal Control', x: 'Hot and Cold' },

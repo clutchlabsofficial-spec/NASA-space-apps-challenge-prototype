@@ -3,7 +3,7 @@
 // as a standalone page, by the browser-side `sample` capability. The two must
 // never drift, because the tags coming back drive the whole review.
 
-import { getStation, getOption } from '../data/stations/index.js'
+import { getStation, resolvePicks } from '../data/stations/index.js'
 import { getMission } from '../data/missions.js'
 import { tagMenuFor, TAG_GLOSSARY } from '../data/vocab.js'
 
@@ -87,12 +87,11 @@ ${referenceMaterial(station)}`
 /** The human half of the request, shared by both transports. */
 export function buildUserText({ stationId, text, picks = {} }) {
   const station = getStation(stationId)
-  const alreadyChosen = Object.entries(picks)
-    .filter(([sid]) => sid !== stationId)
-    .map(([sid, pick]) => {
-      const s = getStation(sid)
-      const label = typeof pick === 'string' ? getOption(sid, pick)?.name.e : pick?.name
-      return label ? `- ${s.name.e}: ${label}` : null
+  const alreadyChosen = Object.keys(picks)
+    .filter((sid) => sid !== stationId)
+    .map((sid) => {
+      const chosen = resolvePicks(sid, picks).map((o) => o.name.e)
+      return chosen.length ? `- ${getStation(sid).name.e}: ${chosen.join(' + ')}` : null
     })
     .filter(Boolean)
     .join('\n')

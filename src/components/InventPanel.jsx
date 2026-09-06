@@ -28,14 +28,15 @@ const VERDICT = {
  * tags from the app's fixed vocabulary, so an invented part flows through the
  * coupling rules and the final review exactly like a real one.
  */
-export default function InventPanel({ station, mode, missionId, picks, currentCustom, onAdopt, onRemove }) {
-  const [open, setOpen] = useState(Boolean(currentCustom))
-  const [text, setText] = useState(currentCustom?.sourceText || '')
+export default function InventPanel({ station, mode, missionId, picks, customPicks = [], onAdopt, onUpdate, onRemove }) {
+  const currentCustom = customPicks[customPicks.length - 1] || null
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
   const [sketch, setSketch] = useState(null)
   const [sketchName, setSketchName] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [result, setResult] = useState(currentCustom || null)
+  const [result, setResult] = useState(null)
 
   async function attachSketch(file) {
     if (!file) return
@@ -73,6 +74,10 @@ export default function InventPanel({ station, mode, missionId, picks, currentCu
   }
 
   const adopt = () => {
+    setResult(null)
+    setText('')
+    setSketch(null)
+    setSketchName(null)
     onAdopt({
       kind: 'custom',
       name: result.name,
@@ -85,7 +90,7 @@ export default function InventPanel({ station, mode, missionId, picks, currentCu
       tags: result.tags,
       sourceText: text,
       generatedMode: result.generatedMode,
-      modelPath: currentCustom?.modelPath || null,
+      model3d: null,
     })
   }
 
@@ -222,35 +227,34 @@ export default function InventPanel({ station, mode, missionId, picks, currentCu
 
           <div className="invent__row invent__actions">
             {adoptable ? (
-              <button className="btn" onClick={adopt}>
-                {currentCustom
-                  ? mode === 'explorer' ? 'Update my satellite' : 'Update the build'
-                  : mode === 'explorer' ? 'Put this on my satellite' : 'Use this design'}
+              <button className="btn btn--big" onClick={adopt}>
+                {mode === 'explorer' ? 'Put this on my satellite' : 'Fit this to the spacecraft'}
               </button>
             ) : (
               <span className="label">
                 {mode === 'explorer' ? 'Try describing a satellite part' : 'Nothing here to fit to the spacecraft yet'}
               </span>
             )}
-            {currentCustom && (
-              <button className="btn btn--bare" onClick={onRemove}>
-                {mode === 'explorer' ? 'Take it off again' : 'Remove from build'}
-              </button>
-            )}
+
           </div>
         </div>
       )}
 
-      {currentCustom && (
-        <div className="invent__sketch3d">
+      {customPicks.map((custom) => (
+        <div className="invent__sketch3d" key={custom.name}>
+          <span className="invent__own-name">{custom.name}</span>
           <SketchStudio
             mode={mode}
-            label={mode === 'explorer' ? 'Turn your drawing into a real 3D model' : 'Sketch to 3D — this part'}
-            existingModel={currentCustom.modelPath}
-            onModel={(modelPath) => onAdopt({ ...currentCustom, modelPath })}
+            label={mode === 'explorer' ? 'Draw it and see it in 3D' : 'Sketch to 3D — this part'}
+            context={`A ${station.name.e} part the child invented: ${custom.name} — ${custom.summary}`}
+            existingModel={custom.model3d}
+            onModel={(model3d) => onUpdate(`custom:${custom.name}`, { ...custom, model3d })}
           />
+          <button className="btn btn--bare" onClick={() => onRemove(custom)}>
+            {mode === 'explorer' ? `Take ${custom.name} off` : `Remove ${custom.name}`}
+          </button>
         </div>
-      )}
+      ))}
     </section>
   )
 }

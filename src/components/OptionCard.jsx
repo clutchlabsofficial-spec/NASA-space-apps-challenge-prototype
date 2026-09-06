@@ -1,20 +1,20 @@
 import { t, SourceChips, Note } from './bits.jsx'
 
-export default function OptionCard({ option, mode, picked, expanded, onToggle, onPick, firedNotes }) {
+export default function OptionCard({ option, mode, chosen, multi, expanded, onToggleOpen, onChoose, firedNotes }) {
   return (
-    <div className={`option panel ${picked ? 'option--picked' : ''}`}>
-      <button className="option__bar" onClick={onToggle} aria-expanded={expanded}>
-        <span className="option__dot" aria-hidden="true" />
-        <span>
+    <div className={`option ${chosen ? 'option--chosen' : ''}`}>
+      <button className="option__bar" onClick={onToggleOpen} aria-expanded={expanded}>
+        <span className={`option__mark ${multi ? 'option__mark--box' : ''}`} aria-hidden="true">
+          {chosen ? '✓' : ''}
+        </span>
+        <span className="option__text">
           <span className="option__name">
             {t(option.name, mode)}
             {option.level === 'engineer' && <span className="option__flag">Engineer</span>}
           </span>
-          <span className="option__blurb" style={{ display: 'block' }}>
-            {t(option.blurb, mode)}
-          </span>
+          <span className="option__blurb">{t(option.blurb, mode)}</span>
         </span>
-        <span className="option__chev">{expanded ? 'Close −' : 'How it works +'}</span>
+        <span className="option__chev mono">{expanded ? 'Close' : 'Tell me more'}</span>
       </button>
 
       {expanded && (
@@ -28,7 +28,7 @@ export default function OptionCard({ option, mode, picked, expanded, onToggle, o
               <span className="label">{mode === 'explorer' ? 'What it is made of' : 'Materials & construction'}</span>
               <p>{t(option.madeOf, mode)}</p>
             </div>
-            <div className="detail__block" style={{ gridColumn: '1 / -1' }}>
+            <div className="detail__block detail__block--wide">
               <span className="label">{mode === 'explorer' ? 'Why engineers pick it' : 'Why real engineers choose it'}</span>
               <p>{t(option.whyChosen, mode)}</p>
             </div>
@@ -74,18 +74,16 @@ export default function OptionCard({ option, mode, picked, expanded, onToggle, o
           <SourceChips ids={option.sources} label={mode === 'explorer' ? 'Read more' : 'Sources'} />
 
           <div className="detail__cta">
-            <button className="btn" onClick={onPick}>
-              {picked
-                ? mode === 'explorer' ? 'Chosen ✓' : 'Selected ✓'
-                : mode === 'explorer' ? 'Pick this one' : 'Select this approach'}
+            <button className={`btn ${chosen ? 'btn--ghost' : ''}`} onClick={onChoose}>
+              {chosen
+                ? mode === 'explorer' ? 'Take it off' : 'Remove from build'
+                : mode === 'explorer' ? 'Put it on my satellite' : 'Fit to spacecraft'}
             </button>
-            {picked && firedNotes?.length > 0 && (
-              <span className="label">{mode === 'explorer' ? 'Look what this changes ↓' : 'Consequences of this choice ↓'}</span>
-            )}
           </div>
 
-          {picked && firedNotes?.length > 0 && (
+          {chosen && firedNotes?.length > 0 && (
             <div className="fired">
+              <span className="label">{mode === 'explorer' ? 'Look what this changes' : 'Consequences of this choice'}</span>
               {firedNotes.map((r) => (
                 <Note key={r.id} rule={r} mode={mode} />
               ))}

@@ -1,5 +1,6 @@
 export const ground = {
   id: 'ground',
+  multi: true,
   order: 10,
   code: 'GND',
   name: { e: 'Ground Segment & Operations', x: 'The Team on Earth' },

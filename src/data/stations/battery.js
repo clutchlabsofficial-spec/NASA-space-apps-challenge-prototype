@@ -1,5 +1,6 @@
 export const battery = {
   id: 'battery',
+  multi: true,
   order: 5,
   code: 'BAT',
   name: { e: 'Energy Storage — the Battery', x: 'The Power Store' },

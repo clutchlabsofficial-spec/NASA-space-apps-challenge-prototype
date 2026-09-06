@@ -3,6 +3,7 @@
 // Same prompt, same schema, same tag vocabulary as the server path.
 
 import { tagMenuFor } from '../data/vocab.js'
+import { buildSketchPrompt, sanitiseModel } from './sketch3d.js'
 import {
   ideaSchema,
   buildSystemPrompt,
@@ -79,4 +80,29 @@ export async function reviewIdeaViaSample({ stationId, missionId, mode, text, im
     physicsProblems: Array.isArray(data.physicsProblems) ? data.physicsProblems : [],
     tags: sanitiseTags(data.tags, tagMenu),
   }
+}
+
+/** Read a drawing and rebuild it as a 3D parts list, in the browser. */
+export async function describeSketchViaSample({ image, mode, context }) {
+  const sample = await getSample()
+  if (!sample) throw new Error('The drawing reader is not available in this view.')
+
+  const limits = await sample.limits?.().catch(() => null)
+  if (!limits?.images) {
+    throw new Error('This view cannot read pictures, so it cannot turn a drawing into 3D.')
+  }
+
+  let data
+  try {
+    data = await sample.json(buildSketchPrompt({ mode, context }), {
+      images: [image],
+      modelTier: 'complex',
+      cache: false,
+    })
+  } catch (err) {
+    if (err?.code === 'not_granted') throw new Error('Reading your drawing needs your permission.')
+    if (err?.code === 'rate_limited') throw new Error('Lots of drawings at once. Wait a few seconds and try again.')
+    throw new Error(err?.message || 'That drawing could not be read.')
+  }
+  return sanitiseModel(data)
 }

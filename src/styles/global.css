@@ -112,34 +112,50 @@ button {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 12px 22px;
-  border: 1px solid transparent;
-  border-radius: var(--r);
+  padding: 13px 22px;
+  border: 0;
+  border-radius: 12px;
   background: var(--primary);
   color: var(--on-primary);
   font-family: var(--font-mono);
   font-size: 0.74rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  transition: filter .15s ease, transform .15s ease;
+  /* A solid lip rather than a blur: the button reads as a physical key, and it
+     depresses when pressed. */
+  box-shadow: 0 4px 0 var(--bg-accent);
+  transition: filter .12s ease, transform .06s ease, box-shadow .06s ease;
 }
-.btn:hover:not(:disabled) { filter: brightness(1.12); }
-.btn:active:not(:disabled) { transform: translateY(1px); }
-.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn:hover:not(:disabled) { filter: brightness(1.08); }
+.btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--bg-accent);
+}
+.btn:disabled { opacity: .38; cursor: not-allowed; box-shadow: 0 4px 0 rgba(104, 79, 123, .5); }
+
+.btn--big {
+  padding: 16px 30px;
+  font-size: 0.82rem;
+  border-radius: 14px;
+}
 
 .btn--ghost {
   background: var(--secondary);
   color: var(--on-secondary);
-  border-color: var(--line);
+  box-shadow: 0 4px 0 #120b26;
 }
 .btn--bare {
   background: transparent;
   color: var(--muted);
-  border-color: var(--line-faint);
+  box-shadow: none;
+  border: 1px solid var(--line-faint);
 }
 .btn--bare:hover { color: var(--fg); border-color: var(--line-strong); }
+.btn--bare:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.btn--bare:disabled { box-shadow: none; }
 
 .rule {
   height: 1px;

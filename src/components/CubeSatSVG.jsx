@@ -3,7 +3,7 @@
 // player actually made, and the internal stack is drawn the way a CubeSat is
 // really laid out — boards stacked on standoffs along the long axis.
 
-import { visualIdFor, isCustom } from '../data/stations/index.js'
+import { visualIdsFor, asList, isCustom } from '../data/stations/index.js'
 
 const P = '#c89bff'
 const A = '#684f7b'
@@ -69,14 +69,19 @@ function Callout({ x, y, tx, ty, text }) {
 export default function CubeSatSVG({ picks: rawPicks }) {
   // Custom parts borrow the drawing of whichever real option they are closest
   // to, so an invented antenna still looks like an antenna on the cutaway.
+  // Each station can hold several choices, so the drawing keys off a set per
+  // station rather than a single id — a satellite with magnetorquers AND wheels
+  // shows both.
   const picks = {}
   const invented = new Set()
-  for (const [stationId, pick] of Object.entries(rawPicks || {})) {
-    const visual = visualIdFor(stationId, pick)
-    if (visual) picks[stationId] = visual
-    if (isCustom(pick)) invented.add(stationId)
+  for (const [stationId, value] of Object.entries(rawPicks || {})) {
+    const ids = visualIdsFor(stationId, value)
+    if (ids.length) picks[stationId] = new Set(ids)
+    if (asList(value).some(isCustom)) invented.add(stationId)
   }
-  const struct = picks.structure
+  // `at('x', 'y')` reads far better than set lookups in the drawing below.
+  const at = (station, id) => picks[station]?.has(id) ?? false
+  const struct = [...(picks.structure || [])][0]
   const dim = BODY[struct] || { w: 62, h: 168 }
   const cx = 200
   const cy = 178
@@ -88,8 +93,8 @@ export default function CubeSatSVG({ picks: rawPicks }) {
   const wingW = dim.h > 100 ? 66 : 46
   const wingH = dim.h > 100 ? dim.h * 0.62 : dim.h
   const wingY = cy - wingH / 2
-  const hasWings = picks.power === 'deployable-fixed' || picks.power === 'articulated'
-  const tilt = picks.power === 'articulated' ? 10 : 0
+  const hasWings = at('power', 'deployable-fixed') || at('power', 'articulated')
+  const tilt = at('power', 'articulated') ? 10 : 0
 
   return (
     <svg viewBox="0 0 400 340" role="img" aria-label="Cutaway view of the satellite you are building">
@@ -115,7 +120,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
 
       {/* ---------------- deployables that sit behind the body ---------------- */}
 
-      {picks.propulsion === 'drag-sail' && (
+      {at('propulsion', 'drag-sail') && (
         <g>
           <path d={`M ${cx} ${bottom} L ${cx - 108} ${bottom + 56} L ${cx} ${bottom + 78} L ${cx + 108} ${bottom + 56} Z`} fill="url(#sail)" stroke={BA} strokeWidth="0.9" />
           <line x1={cx} y1={bottom} x2={cx - 108} y2={bottom + 56} stroke={P} strokeWidth="0.8" />
@@ -124,14 +129,14 @@ export default function CubeSatSVG({ picks: rawPicks }) {
         </g>
       )}
 
-      {picks.propulsion === 'tether' && (
+      {at('propulsion', 'tether') && (
         <g>
           <line x1={cx} y1={bottom} x2={cx} y2="330" stroke={P} strokeWidth="1.2" strokeDasharray="6 3" />
           <Callout x={cx} y="318" tx={236} ty="322" text="EDT TAPE 70 m" />
         </g>
       )}
 
-      {picks.adcs === 'gravity-gradient' && (
+      {at('adcs', 'gravity-gradient') && (
         <g>
           <line x1={cx} y1={y} x2={cx} y2={y - 74} stroke={A} strokeWidth="2" />
           <circle cx={cx} cy={y - 78} r="7" fill={CARD} stroke={P} strokeWidth="1.2" />
@@ -153,7 +158,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
             <SolarCells x={right} y={wingY} w={wingW} h={wingH} cols={3} rows={5} />
             <line x1={right} y1={cy} x2={right + 3} y2={cy} stroke={P} strokeWidth="2" />
           </g>
-          {picks.power === 'articulated' && (
+          {at('power', 'articulated') && (
             <>
               <circle cx={x - 2} cy={cy} r="4.5" fill={CARD} stroke={P} strokeWidth="1" />
               <circle cx={right + 2} cy={cy} r="4.5" fill={CARD} stroke={P} strokeWidth="1" />
@@ -192,7 +197,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
       )}
 
       {/* body-mounted cells */}
-      {picks.power === 'body-mounted' && (
+      {at('power', 'body-mounted') && (
         <>
           <SolarCells x={x + 6} y={y + 6} w={dim.w - 12} h={dim.h - 12} cols={2} rows={Math.max(2, Math.round(dim.h / 34))} />
           <Callout x={x + dim.w / 2} y={y + 14} tx={26} ty={y + 8} text="BODY-MOUNTED CELLS" />
@@ -200,11 +205,11 @@ export default function CubeSatSVG({ picks: rawPicks }) {
       )}
 
       {/* MLI wrap */}
-      {picks.thermal === 'mli-straps' && (
+      {at('thermal', 'mli-straps') && (
         <rect x={x - 4} y={y - 4} width={dim.w + 8} height={dim.h + 8} fill="none" stroke={P} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.75" />
       )}
       {/* white radiator face */}
-      {(picks.thermal === 'passive-coatings' || picks.thermal === 'cryocooler') && (
+      {(at('thermal', 'passive-coatings') || at('thermal', 'cryocooler')) && (
         <>
           <rect x={right - 7} y={y + 12} width="6" height={dim.h - 24} fill={FG} opacity="0.16" stroke={FG} strokeOpacity="0.4" strokeWidth="0.6" />
           <Callout x={right - 4} y={y + 30} tx={392} ty={y + 22} text="RADIATOR" />
@@ -226,7 +231,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
       )}
 
       {/* battery survival heater */}
-      {picks.thermal === 'heaters' && picks.battery && (
+      {at('thermal', 'heaters') && picks.battery && (
         <>
           <path
             d={`M ${x + 9} ${cy + 22} l 6 0 l 0 -3 l 6 0 l 0 3 l 6 0 l 0 -3 l 6 0 l 0 3 l 6 0`}
@@ -239,7 +244,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
       )}
 
       {/* phase change / heat pipe */}
-      {picks.thermal === 'pcm-heatpipe' && (
+      {at('thermal', 'pcm-heatpipe') && (
         <>
           <rect x={x + 8} y={cy + 58} width={dim.w - 16} height="9" fill="url(#hatch)" stroke={A} strokeWidth="0.8" />
           <Callout x={x + 14} y={cy + 62} tx={22} ty={cy + 84} text="PCM / HEAT PIPE" />
@@ -248,14 +253,14 @@ export default function CubeSatSVG({ picks: rawPicks }) {
 
       {/* ---------------- ADCS hardware ---------------- */}
 
-      {picks.adcs === 'passive-magnetic' && (
+      {at('adcs', 'passive-magnetic') && (
         <>
           <rect x={cx - 16} y={cy + 58} width="32" height="7" fill={CARD} stroke={P} strokeWidth="1" />
           <rect x={cx - 16} y={cy + 58} width="16" height="7" fill={BA} opacity="0.6" />
           <Callout x={cx} y={cy + 61} tx={22} ty={cy + 86} text="PERMANENT MAGNET" />
         </>
       )}
-      {picks.adcs === 'magnetorquers' && (
+      {at('adcs', 'magnetorquers') && (
         <>
           {[0, 1, 2].map((i) => (
             <g key={i}>
@@ -268,7 +273,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
           <Callout x={cx - 6} y={cy + 66} tx={22} ty={cy + 92} text="TORQUE RODS ×3" />
         </>
       )}
-      {(picks.adcs === 'wheels-plus-torquers' || picks.adcs === 'integrated-startracker') && (
+      {(at('adcs', 'wheels-plus-torquers') || at('adcs', 'integrated-startracker')) && (
         <>
           {[-1, 0, 1].map((i) => (
             <g key={i}>
@@ -280,7 +285,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
           <Callout x={cx - 17} y={cy + 68} tx={22} ty={cy + 96} text="REACTION WHEELS ×3" />
         </>
       )}
-      {picks.adcs === 'integrated-startracker' && (
+      {at('adcs', 'integrated-startracker') && (
         <>
           <path d={`M ${x - 16} ${y + 32} l 16 -7 l 0 20 z`} fill={CARD} stroke={P} strokeWidth="1" />
           <line x1={x - 22} y1={y + 22} x2={x - 16} y2={y + 30} stroke={A} strokeWidth="0.7" />
@@ -291,7 +296,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
 
       {/* ---------------- payload, at the top of the stack ---------------- */}
 
-      {picks.payload === 'thermal-ir' && (
+      {at('payload', 'thermal-ir') && (
         <>
           <rect x={cx - 16} y={y - 22} width="32" height="24" fill={CARD} stroke={P} strokeWidth="1.2" />
           <ellipse cx={cx} cy={y - 22} rx="13" ry="4" fill={BG} stroke={P} strokeWidth="1.2" />
@@ -299,22 +304,22 @@ export default function CubeSatSVG({ picks: rawPicks }) {
           <Callout x={cx + 14} y={y - 12} tx={382} ty={y - 22} text="LWIR/MWIR IMAGER" />
         </>
       )}
-      {(picks.payload === 'vis-multispectral' || picks.payload === 'hyperspectral') && (
+      {(at('payload', 'vis-multispectral') || at('payload', 'hyperspectral')) && (
         <>
           <rect x={cx - 13} y={y - 40} width="26" height="42" fill={CARD} stroke={P} strokeWidth="1.2" />
           <rect x={cx - 17} y={y - 44} width="34" height="6" fill={BG} stroke={P} strokeWidth="1.2" />
           <line x1={cx - 13} y1={y - 26} x2={cx + 13} y2={y - 26} stroke={A} strokeWidth="0.7" />
           <line x1={cx - 13} y1={y - 14} x2={cx + 13} y2={y - 14} stroke={A} strokeWidth="0.7" />
-          {picks.payload === 'hyperspectral' && (
+          {at('payload', 'hyperspectral') && (
             <path d={`M ${cx - 7} ${y - 8} l 14 0 l -7 -12 z`} fill="none" stroke={P} strokeWidth="1" />
           )}
           <Callout
             x={cx + 13} y={y - 32} tx={382} ty={y - 36}
-            text={picks.payload === 'hyperspectral' ? 'SPECTROMETER' : 'VIS/NIR TELESCOPE'}
+            text={at('payload', 'hyperspectral') ? 'SPECTROMETER' : 'VIS/NIR TELESCOPE'}
           />
         </>
       )}
-      {picks.payload === 'sdr-receiver' && (
+      {at('payload', 'sdr-receiver') && (
         <>
           <rect x={cx - 15} y={y - 16} width="30" height="18" fill={CARD} stroke={P} strokeWidth="1.2" />
           <line x1={cx - 40} y1={y - 30} x2={cx + 40} y2={y - 30} stroke={P} strokeWidth="1.4" />
@@ -322,14 +327,14 @@ export default function CubeSatSVG({ picks: rawPicks }) {
           <Callout x={cx + 30} y={y - 30} tx={382} ty={y - 40} text="VHF AIS ANTENNA" />
         </>
       )}
-      {picks.payload === 'gnss-ro' && (
+      {at('payload', 'gnss-ro') && (
         <>
           <rect x={x - 18} y={y + 6} width="16" height="22" fill={CARD} stroke={P} strokeWidth="1.1" />
           <rect x={right + 2} y={y + 6} width="16" height="22" fill={CARD} stroke={P} strokeWidth="1.1" />
           <Callout x={right + 10} y={y + 17} tx={382} ty={y + 6} text="GNSS-RO LIMB ANT" />
         </>
       )}
-      {picks.payload === 'particle-telescope' && (
+      {at('payload', 'particle-telescope') && (
         <>
           <rect x={cx - 10} y={y - 26} width="20" height="28" fill={CARD} stroke={P} strokeWidth="1.2" />
           {[0, 1, 2, 3].map((i) => (
@@ -339,7 +344,7 @@ export default function CubeSatSVG({ picks: rawPicks }) {
           <Callout x={cx + 10} y={y - 20} tx={382} ty={y - 28} text="PARTICLE TELESCOPE" />
         </>
       )}
-      {picks.payload === 'ka-radar' && (
+      {at('payload', 'ka-radar') && (
         <>
           <path d={`M ${cx - 46} ${y - 8} Q ${cx} ${y - 62} ${cx + 46} ${y - 8}`} fill="none" stroke={P} strokeWidth="1.6" />
           <path d={`M ${cx - 46} ${y - 8} Q ${cx} ${y - 44} ${cx + 46} ${y - 8}`} fill="none" stroke={A} strokeWidth="0.7" strokeDasharray="3 3" />
@@ -350,28 +355,28 @@ export default function CubeSatSVG({ picks: rawPicks }) {
 
       {/* ---------------- comms antenna ---------------- */}
 
-      {picks.comms === 'uhf-vhf' && (
+      {at('comms', 'uhf-vhf') && (
         <>
           <line x1={x + 6} y1={bottom} x2={x - 44} y2={bottom + 40} stroke={P} strokeWidth="1.3" />
           <line x1={right - 6} y1={bottom} x2={right + 44} y2={bottom + 40} stroke={P} strokeWidth="1.3" />
           <Callout x={right + 26} y={bottom + 24} tx={382} ty={bottom + 40} text="UHF TAPE MONOPOLES" />
         </>
       )}
-      {picks.comms === 's-band' && (
+      {at('comms', 's-band') && (
         <>
           <rect x={cx - 12} y={bottom} width="24" height="7" fill={CARD} stroke={P} strokeWidth="1.2" />
           <rect x={cx - 8} y={bottom + 1.6} width="16" height="3.8" fill={BA} opacity="0.7" />
           <Callout x={cx + 10} y={bottom + 4} tx={382} ty={bottom + 20} text="S-BAND PATCH" />
         </>
       )}
-      {picks.comms === 'x-band' && (
+      {at('comms', 'x-band') && (
         <>
           <path d={`M ${cx - 8} ${bottom} l -14 26 l 44 0 l -14 -26 z`} fill={CARD} stroke={P} strokeWidth="1.2" />
           <line x1={cx - 20} y1={bottom + 30} x2={cx + 26} y2={bottom + 30} stroke={A} strokeWidth="0.8" strokeDasharray="2 2" />
           <Callout x={cx + 16} y={bottom + 18} tx={382} ty={bottom + 34} text="X-BAND HIGH GAIN" />
         </>
       )}
-      {picks.comms === 'optical' && (
+      {at('comms', 'optical') && (
         <>
           <circle cx={cx} cy={bottom + 10} r="9" fill={CARD} stroke={P} strokeWidth="1.3" />
           <circle cx={cx} cy={bottom + 10} r="3.4" fill={P} opacity="0.65" />
@@ -382,25 +387,25 @@ export default function CubeSatSVG({ picks: rawPicks }) {
 
       {/* ---------------- propulsion ---------------- */}
 
-      {(picks.propulsion === 'cold-gas' || picks.propulsion === 'green-mono' || picks.propulsion === 'electric') && (
+      {(at('propulsion', 'cold-gas') || at('propulsion', 'green-mono') || at('propulsion', 'electric')) && (
         <g>
           <circle cx={cx + (dim.w > 90 ? 34 : 0)} cy={cy + 74} r="9" fill={CARD} stroke={A} strokeWidth="1" />
           <text x={cx + (dim.w > 90 ? 34 : 0)} y={cy + 76.5} fontSize="5" fill={FG} opacity="0.7" textAnchor="middle" fontFamily="IBM Plex Mono, monospace">
-            {picks.propulsion === 'electric' ? 'PROP' : 'TANK'}
+            {at('propulsion', 'electric') ? 'PROP' : 'TANK'}
           </text>
           <path d={`M ${cx - 6} ${bottom} l -3 9 l 18 0 l -3 -9 z`} fill={CARD} stroke={P} strokeWidth="1.1" transform={`translate(${dim.w > 90 ? 34 : 0} 0)`} />
-          {picks.propulsion === 'electric' && (
+          {at('propulsion', 'electric') && (
             <ellipse cx={cx + (dim.w > 90 ? 34 : 0)} cy={bottom + 20} rx="9" ry="14" fill="url(#plume)" />
           )}
           <Callout
             x={cx + (dim.w > 90 ? 34 : 0)} y={cy + 74} tx={382} ty={cy + 96}
-            text={picks.propulsion === 'electric' ? 'ELECTRIC THRUSTER' : picks.propulsion === 'cold-gas' ? 'COLD GAS' : 'GREEN MONOPROP'}
+            text={at('propulsion', 'electric') ? 'ELECTRIC THRUSTER' : at('propulsion', 'cold-gas') ? 'COLD GAS' : 'GREEN MONOPROP'}
           />
         </g>
       )}
 
       {/* ---------------- cryocooler ---------------- */}
-      {picks.thermal === 'cryocooler' && (
+      {at('thermal', 'cryocooler') && (
         <>
           <rect x={cx - 24} y={y + 8} width="14" height="20" fill={CARD} stroke={P} strokeWidth="1" />
           <line x1={cx - 10} y1={y + 12} x2={cx - 2} y2={y + 12} stroke={P} strokeWidth="2" />

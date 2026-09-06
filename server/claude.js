@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { z } from 'zod'
 import { STATIONS, getStation } from '../src/data/stations/index.js'
 import { tagMenuFor } from '../src/data/vocab.js'
+import { buildSketchPrompt, sketchSchema, sanitiseModel } from '../src/lib/sketch3d.js'
 import {
   ideaSchema,
   buildSystemPrompt,
@@ -85,6 +86,46 @@ export async function reviewIdea({ stationId, missionId, mode = 'engineer', text
   if (!parsed.success) throw Object.assign(new Error('Model returned an unexpected shape'), { status: 502 })
 
   return { ...parsed.data, tags: sanitiseTags(parsed.data.tags, tagMenu), usage: response.usage }
+}
+
+/** Read a child's drawing and return it as a 3D parts list. */
+export async function describeSketch({ imageBase64, imageMediaType, mode = 'engineer', context }) {
+  let response
+  try {
+    response = await client.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 8000,
+      thinking: { type: 'adaptive' },
+      // Reading a drawing and rebuilding it in 3D is a harder spatial task than
+      // judging a written idea, so it gets more room to think.
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema: sketchSchema } },
+      system: buildSketchPrompt({ mode, context }),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: imageMediaType || 'image/jpeg', data: imageBase64 } },
+            { type: 'text', text: 'This is my drawing of my satellite. Please rebuild it in 3D.' },
+          ],
+        },
+      ],
+    })
+  } catch (err) {
+    if (err instanceof Anthropic.AuthenticationError) {
+      throw Object.assign(new Error('The drawing reader is not configured on the server.'), { status: 503 })
+    }
+    if (err instanceof Anthropic.RateLimitError) {
+      throw Object.assign(new Error('Lots of drawings at once. Wait a few seconds and try again.'), { status: 429 })
+    }
+    throw err
+  }
+
+  if (response.stop_reason === 'refusal') {
+    throw Object.assign(new Error('That picture could not be used. Try a drawing of your satellite on plain paper.'), { status: 400 })
+  }
+  const raw = response.content.find((b) => b.type === 'text')?.text
+  if (!raw) throw Object.assign(new Error('Empty response from the model'), { status: 502 })
+  return sanitiseModel(JSON.parse(raw))
 }
 
 export const STATION_IDS = STATIONS.map((s) => s.id)

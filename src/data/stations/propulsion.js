@@ -1,5 +1,6 @@
 export const propulsion = {
   id: 'propulsion',
+  multi: true,
   order: 11,
   code: 'PROP',
   name: { e: 'Propulsion & End of Life', x: 'Moving, and Coming Home' },

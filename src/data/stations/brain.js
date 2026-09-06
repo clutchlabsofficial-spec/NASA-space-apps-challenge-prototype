@@ -1,5 +1,6 @@
 export const brain = {
   id: 'brain',
+  multi: false,
   order: 6,
   code: 'CDH',
   name: { e: 'Brain — Command & Data Handling', x: 'The Brain' },
