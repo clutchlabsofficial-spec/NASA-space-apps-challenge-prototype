@@ -1,4 +1,4 @@
-import { STATIONS, getOption, tagsFor } from '../data/stations/index.js'
+import { STATIONS, resolvePick, isCustom, tagsFor } from '../data/stations/index.js'
 import { getMission } from '../data/missions.js'
 import { flightNotes } from './consequences.js'
 
@@ -14,9 +14,31 @@ export const isComplete = (picks) => STATIONS.every((s) => picks[s.id])
 // What the spacecraft could actually do
 // ---------------------------------------------------------------------------
 
+// Which capability tag a mission's core question actually requires. Used to
+// judge an invented payload the same way the curated ones are judged.
+const MISSION_CAPABILITY = {
+  wildfire: ['cap:sees-heat'],
+  maritime: ['cap:listens-radio'],
+  weather: ['cap:profiles-atmosphere', 'cap:sees-inside-storms'],
+  spaceweather: ['cap:detects-particles'],
+  landcover: ['cap:sees-colour', 'cap:identifies-materials'],
+}
+
 function capabilityClauses(picks, tags) {
   const out = []
-  const pl = picks.payload
+  const pl = typeof picks.payload === 'string' ? picks.payload : null
+
+  // An invented instrument describes itself, in Claude's words rather than ours.
+  if (isCustom(picks.payload)) {
+    const d = picks.payload
+    out.push(T(d.summary, d.summary))
+    if (d.realCounterpart) {
+      out.push(T(
+        `Closest real hardware: ${d.realCounterpart}`,
+        `Real engineers build something like this: ${d.realCounterpart}`,
+      ))
+    }
+  }
 
   if (pl === 'thermal-ir') {
     out.push(T(
@@ -295,8 +317,18 @@ function disposal(tags) {
 
 function missionVerdict(missionId, picks, tags) {
   const mission = getMission(missionId)
-  const fit = mission.payloadFit[picks.payload] || 'no'
-  const plOpt = getOption('payload', picks.payload)
+  const plOpt = resolvePick('payload', picks.payload)
+
+  let fit
+  if (isCustom(picks.payload)) {
+    const wanted = MISSION_CAPABILITY[missionId] || []
+    const invented = picks.payload.tags || []
+    if (wanted.some((c) => invented.includes(c))) fit = 'ideal'
+    else if (invented.some((t) => t.startsWith('cap:'))) fit = 'partial'
+    else fit = 'no'
+  } else {
+    fit = mission.payloadFit[picks.payload] || 'no'
+  }
 
   const base = {
     ideal: T(
@@ -343,6 +375,20 @@ function missionVerdict(missionId, picks, tags) {
       'You are deliberately flying through energetic particles with a commercial processor. Survivable with good fault handling, but plan for resets and protect your science data.',
       'You are flying into space storms with an ordinary computer chip. It will get knocked over sometimes — make sure it can always restart.',
     ))
+  }
+
+  if (isCustom(picks.payload)) {
+    blockers.unshift(
+      fit === 'no'
+        ? T(
+            'You invented this instrument yourself, and honestly it does not answer this mission’s question. That is a real engineering finding, not a mistake — it is exactly the check a mission review board performs.',
+            'You made this tool up yourself! But it does not answer the question your mission asked. Real engineers check this too — and sometimes they find the same thing.',
+          )
+        : T(
+            'This assessment is of an instrument you invented, judged on the engineering properties it actually has.',
+            'This is your own invention, judged on what it can really do.',
+          ),
+    )
   }
 
   return { fit, base, blockers, plOpt, mission }

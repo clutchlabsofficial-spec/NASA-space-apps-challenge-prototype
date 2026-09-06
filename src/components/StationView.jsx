@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
-import { STATIONS, visibleOptions } from '../data/stations/index.js'
+import { STATIONS, visibleOptions, isCustom } from '../data/stations/index.js'
 import { briefingFor, notesTriggeredBy } from '../lib/consequences.js'
 import { t, Note, SourceChips } from './bits.jsx'
 import OptionCard from './OptionCard.jsx'
 import Viewer from './Viewer.jsx'
+import InventPanel from './InventPanel.jsx'
 
-export default function StationView({ station, picks, mode, onPick, onGoto, onFinish }) {
+export default function StationView({ station, picks, mode, missionId, onPick, onGoto, onFinish }) {
   const [expanded, setExpanded] = useState(null)
   const index = STATIONS.indexOf(station)
   const options = visibleOptions(station, mode)
   const briefing = briefingFor(station.id, picks)
-  const pickedId = picks[station.id]
-  const fired = pickedId ? notesTriggeredBy(station.id, picks) : []
+  const pick = picks[station.id]
+  const customPick = isCustom(pick) ? pick : null
+  const pickedId = typeof pick === 'string' ? pick : null
+  const fired = pick ? notesTriggeredBy(station.id, picks) : []
   const allDone = STATIONS.every((s) => picks[s.id])
 
   // Opening a new station should not inherit the previous one's open card.
   useEffect(() => {
-    setExpanded(pickedId ?? null)
+    setExpanded(typeof picks[station.id] === 'string' ? picks[station.id] : null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station.id])
@@ -101,6 +104,16 @@ export default function StationView({ station, picks, mode, onPick, onGoto, onFi
           ))}
         </div>
 
+        <InventPanel
+          station={station}
+          mode={mode}
+          missionId={missionId}
+          picks={picks}
+          currentCustom={customPick}
+          onAdopt={(custom) => onPick(station.id, custom)}
+          onRemove={() => onPick(station.id, null)}
+        />
+
         {mode === 'engineer' && station.options.some((o) => o.level === 'engineer') && (
           <p className="label" style={{ marginTop: 14 }}>
             Options tagged Engineer are hidden in Explorer Mode
@@ -122,8 +135,8 @@ export default function StationView({ station, picks, mode, onPick, onGoto, onFi
           )}
           <span className="spacer" />
           {next ? (
-            <button className="btn" onClick={() => onGoto(next.id)} disabled={!pickedId}>
-              {pickedId ? `${t(next.name, mode)} →` : mode === 'explorer' ? 'Pick one to continue' : 'Select an approach to continue'}
+            <button className="btn" onClick={() => onGoto(next.id)} disabled={!pick}>
+              {pick ? `${t(next.name, mode)} →` : mode === 'explorer' ? 'Pick one to continue' : 'Select an approach to continue'}
             </button>
           ) : (
             <button className="btn" onClick={onFinish} disabled={!allDone}>

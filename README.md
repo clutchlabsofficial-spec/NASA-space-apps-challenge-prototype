@@ -12,12 +12,96 @@ actually works, what it is made of, why engineers pick it, and what it honestly 
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # static output in dist/
+cp .env.example .env      # add your Anthropic and Tripo keys
+npm run dev               # web on :5173, API proxy on :8787
+npm run build             # static output in dist/
 ```
 
-Vite + React, plain CSS. No backend, no persistence, no external state — everything lives in
-React state in `App.jsx`.
+`npm run dev` runs both halves. The guided build works with no keys at all — only the two AI
+features need them, and they fail with a readable message rather than breaking the app.
+
+Vite + React and plain CSS on the front, a small Express proxy on the back. No database; all
+build state lives in React state in `App.jsx`.
+
+## Design your own — Claude
+
+Every subsystem station has an **Or design your own** panel underneath the standard options. A
+child types their idea, or attaches a drawing, and Claude reviews it against the same curated,
+sourced reference material the standard options come from — which is passed in the system prompt,
+so the model judges the idea against real engineering rather than its own recollection.
+
+It returns a verdict, how the idea would really work, **the closest real hardware that has
+actually flown**, what is genuinely smart about it, what physics does to it — and a set of tags.
+
+The tags are the important part. The coupling engine and the final review reason about a
+satellite purely through tags, so Claude is constrained by a JSON-schema `enum` to describe the
+invention using the app's own closed vocabulary (`src/data/vocab.js`, derived from the curated
+options so the two can never drift). An invented reaction-control system tagged `adcs:coarse`
+therefore trips exactly the same "your camera will smear" rule a real magnetorquer would. A
+child's invention is a first-class part of the spacecraft, not a side panel.
+
+Implementation notes:
+
+- `claude-opus-5` with adaptive thinking, at `effort: low` — the task is bounded (judge one idea
+  against supplied reference material) and a child is waiting.
+- Structured outputs (`output_config.format`) guarantee schema-valid JSON, because the response
+  drives UI for a nine-year-old rather than a developer console.
+- `stop_reason: "refusal"` is handled as a gentle in-app state, never a 500.
+- Anthropic errors are caught by type, most specific first, and mapped to sentences a child can
+  read.
+- The analysis is written for the age mode that was active when it was requested. Switching mode
+  offers to rewrite it rather than silently showing the wrong register.
+
+## Sketch to 3D — Tripo AI
+
+Two places, both opt-in:
+
+- **Any part, at any station** — once a child has adopted their own design, they can photograph
+  the drawing of it and get a 3D model of that part.
+- **The whole satellite, at the end** — next to the honest engineering review, they draw how they
+  picture their finished spacecraft and it comes back as a mesh they can orbit.
+
+Uses Tripo v3 (`openapi.tripo3d.ai/v3`): upload the image for a file token, `POST
+/generation/image-to-model`, poll `GET /tasks/{id}` every 2.5s. **Tripo v2 retires on
+2026-11-01** — during the hackathon — so nothing here touches it.
+
+Tripo's finished-model URLs **expire after five minutes**, so the proxy downloads the GLB the
+instant a task succeeds and serves it itself. The browser is never handed a URL that may already
+be dead. Models are held in memory only and dropped an hour later.
+
+> **One thing to verify before the event:** Tripo's docs site is a JS app that would not render
+> for scraping, so the file-upload path could not be confirmed from the public docs. It defaults
+> to `/upload/sts` and is isolated behind `TRIPO_UPLOAD_PATH` in `server/tripo.js`; a 404 there
+> returns an error naming that env var. Everything else in the flow is confirmed against Tripo's
+> v3 quick-start.
+
+## Keys, cost and safety
+
+No key ever reaches the browser. `server/` holds both and the Vite dev server proxies `/api`
+to it.
+
+Budget guards live in `server/guard.js` and matter because a booth demo runs for hours with a
+queue of children at it:
+
+| Guard | Default | Env var |
+|---|---|---|
+| Idea reviews per session | 40 | `SESSION_IDEA_LIMIT` |
+| 3D models per session | 4 | `SESSION_MODEL_LIMIT` |
+| 3D models per server, per day | 200 | `GLOBAL_MODEL_LIMIT` |
+| Requests per session per minute | 20 | `MAX_REQUESTS_PER_MINUTE` |
+
+A Tripo job that fails before it is accepted refunds the child's model allowance.
+
+Safety, for a kid-facing app at a public event:
+
+- The camera cannot be opened until a notice has been read explaining, in age-appropriate words,
+  that the photo goes to another computer, that it is not stored, and to **photograph the
+  drawing, not people**.
+- The system prompt keeps Claude on satellite engineering; off-topic input gets a friendly
+  redirect and an `off-topic` verdict rather than an answer.
+- Nothing a child submits is written to disk. Sessions are in-memory and swept after six hours.
+- Both AI features are entirely optional — the full eleven-subsystem build and its review work
+  with the server switched off.
 
 ## The two age modes
 
@@ -113,7 +197,12 @@ perfectly good satellite carrying the wrong instrument, which is how real missio
   and register it in `src/data/stations/index.js`.
 - **New coupling**: add a rule to `RULES` in `src/lib/consequences.js`.
 - **The satellite drawing**: `src/components/CubeSatSVG.jsx` is hand-authored SVG that reads
-  `picks` directly. Add a conditional group keyed on the new option id.
+  `picks` directly. Add a conditional group keyed on the new option id. Custom parts borrow the
+  drawing of whichever curated option they are closest to by tag overlap, so an invented antenna
+  still looks like an antenna.
+- **What Claude is allowed to say about an invention**: the tag menu comes from
+  `src/data/vocab.js`. Adding a tag to a curated option automatically makes it available to
+  inventions too; add a line to `TAG_GLOSSARY` so the model knows what it means.
 
 ## Visual system
 

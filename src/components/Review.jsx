@@ -1,7 +1,8 @@
 import { buildReview, NEXT_STEPS } from '../lib/review.js'
-import { STATIONS, getOption } from '../data/stations/index.js'
+import { STATIONS, resolvePick } from '../data/stations/index.js'
 import { t, Note, SourceChips } from './bits.jsx'
 import CubeSatSVG from './CubeSatSVG.jsx'
+import SketchStudio from './SketchStudio.jsx'
 
 const FIT_STAMP = {
   ideal: { e: 'Right instrument', x: 'Perfect tool' },
@@ -9,7 +10,7 @@ const FIT_STAMP = {
   no: { e: 'Wrong instrument', x: 'Wrong tool' },
 }
 
-export default function Review({ missionId, picks, mode, onGoto, onRestart, onRefs }) {
+export default function Review({ missionId, picks, mode, onGoto, onRestart, onRefs, wholeModel, onWholeModel }) {
   const r = buildReview(missionId, picks)
   const mission = r.mission.mission
   const good = r.notes.filter((n) => n.kind === 'good')
@@ -95,10 +96,27 @@ export default function Review({ missionId, picks, mode, onGoto, onRestart, onRe
           </section>
 
           <section className="panel card">
+            <h3 className="card__title" style={{ marginBottom: 8 }}>
+              {mode === 'explorer' ? 'Now draw YOUR satellite' : 'Draw your satellite'}
+            </h3>
+            <p style={{ color: 'var(--muted)', fontSize: '0.93rem', marginBottom: 14 }}>
+              {mode === 'explorer'
+                ? 'The picture above is how an engineer would draw it. Now draw how YOU think your satellite looks — then watch it become a real 3D model you can spin around.'
+                : 'The cutaway above is the engineering view. Draw how you picture the finished spacecraft and it will be reconstructed as a 3D mesh you can orbit.'}
+            </p>
+            <SketchStudio
+              mode={mode}
+              label={mode === 'explorer' ? 'Your satellite, in 3D' : 'Whole spacecraft — sketch to 3D'}
+              existingModel={wholeModel}
+              onModel={onWholeModel}
+            />
+          </section>
+
+          <section className="panel card">
             <span className="label">{mode === 'explorer' ? 'Your parts list' : 'Configuration manifest'}</span>
             <div className="manifest manifest--review">
               {STATIONS.map((s) => {
-                const opt = getOption(s.id, picks[s.id])
+                const opt = resolvePick(s.id, picks[s.id])
                 return (
                   <button
                     key={s.id}
@@ -107,7 +125,10 @@ export default function Review({ missionId, picks, mode, onGoto, onRestart, onRe
                     style={{ background: 'none', border: 0, borderBottom: '1px solid var(--line-faint)', textAlign: 'left', width: '100%' }}
                   >
                     <span className="manifest__k">{s.code}</span>
-                    <span className="manifest__v">{opt ? t(opt.name, mode) : '—'}</span>
+                    <span className="manifest__v">
+                      {opt ? t(opt.name, mode) : '—'}
+                      {opt?.custom && <span className="manifest__own">yours</span>}
+                    </span>
                   </button>
                 )
               })}

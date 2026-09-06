@@ -1,4 +1,4 @@
-import { tagsFor, getOption } from '../data/stations/index.js'
+import { tagsFor } from '../data/stations/index.js'
 
 // Qualitative coupling between subsystems. No scores, no numbers invented —
 // each rule states a real engineering consequence of a combination of choices.
@@ -498,4 +498,3 @@ export function notesTriggeredBy(stationId, picks) {
   return RULES.filter((r) => fires(r, afterTags) && !fires(r, beforeTags))
 }
 
-export const optionOf = getOption

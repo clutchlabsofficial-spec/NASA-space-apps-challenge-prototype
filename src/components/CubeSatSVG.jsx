@@ -3,6 +3,8 @@
 // player actually made, and the internal stack is drawn the way a CubeSat is
 // really laid out — boards stacked on standoffs along the long axis.
 
+import { visualIdFor, isCustom } from '../data/stations/index.js'
+
 const P = '#c89bff'
 const A = '#684f7b'
 const BA = '#65417c'
@@ -64,7 +66,16 @@ function Callout({ x, y, tx, ty, text }) {
   )
 }
 
-export default function CubeSatSVG({ picks }) {
+export default function CubeSatSVG({ picks: rawPicks }) {
+  // Custom parts borrow the drawing of whichever real option they are closest
+  // to, so an invented antenna still looks like an antenna on the cutaway.
+  const picks = {}
+  const invented = new Set()
+  for (const [stationId, pick] of Object.entries(rawPicks || {})) {
+    const visual = visualIdFor(stationId, pick)
+    if (visual) picks[stationId] = visual
+    if (isCustom(pick)) invented.add(stationId)
+  }
   const struct = picks.structure
   const dim = BODY[struct] || { w: 62, h: 168 }
   const cx = 200
@@ -395,6 +406,16 @@ export default function CubeSatSVG({ picks }) {
           <line x1={cx - 10} y1={y + 12} x2={cx - 2} y2={y + 12} stroke={P} strokeWidth="2" />
           <Callout x={cx - 17} y={y + 18} tx={20} ty={y + 12} text="CRYOCOOLER" />
         </>
+      )}
+
+      {/* ---------------- invented parts marker ---------------- */}
+      {invented.size > 0 && (
+        <g>
+          <rect x="8" y="8" width="96" height="15" fill={CARD} stroke={P} strokeWidth="0.8" strokeDasharray="3 2" />
+          <text x="56" y="18.5" fontSize="6" fill={P} textAnchor="middle" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.8">
+            {invented.size} PART{invented.size > 1 ? 'S' : ''} YOU INVENTED
+          </text>
+        </g>
       )}
 
       {/* ---------------- empty state ---------------- */}

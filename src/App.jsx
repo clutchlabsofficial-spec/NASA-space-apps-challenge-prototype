@@ -16,17 +16,27 @@ export default function App() {
   const [missionId, setMissionId] = useState(null)
   const [stationId, setStationId] = useState(STATIONS[0].id)
   const [picks, setPicks] = useState({})
+  const [wholeModel, setWholeModel] = useState(null)
 
   const mission = missionId ? getMission(missionId) : null
 
   const startMission = (id) => {
     setMissionId(id)
     setPicks({})
+    setWholeModel(null)
     setStationId(STATIONS[0].id)
     setScreen('build')
   }
 
-  const pick = (sid, oid) => setPicks((p) => ({ ...p, [sid]: oid }))
+  const pick = (sid, value) =>
+    setPicks((p) => {
+      if (value == null) {
+        const next = { ...p }
+        delete next[sid]
+        return next
+      }
+      return { ...p, [sid]: value }
+    })
 
   const goto = (sid) => {
     setStationId(sid)
@@ -41,6 +51,7 @@ export default function App() {
   const restart = () => {
     setMissionId(null)
     setPicks({})
+    setWholeModel(null)
     setStationId(STATIONS[0].id)
     setScreen('mission')
     window.scrollTo({ top: 0 })
@@ -64,6 +75,7 @@ export default function App() {
           station={getStation(stationId)}
           picks={picks}
           mode={mode}
+          missionId={missionId}
           onPick={pick}
           onGoto={goto}
           onFinish={() => {
@@ -81,6 +93,8 @@ export default function App() {
           onGoto={goto}
           onRestart={restart}
           onRefs={openRefs}
+          wholeModel={wholeModel}
+          onWholeModel={setWholeModel}
         />
       )}
 
