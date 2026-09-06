@@ -54,13 +54,18 @@ export default function Mascot({ mood = 'happy', size = 84, talking = false }) {
   )
 }
 
-/** Nova saying something. The one phrase worth remembering gets highlighted. */
-export function MascotSays({ mood = 'happy', size = 76, children, highlight }) {
+/**
+ * Nova saying something.
+ *   highlight — a short phrase, set as a pill. Keep it to a few words.
+ *   lead      — a full opening sentence, emphasised but allowed to wrap.
+ */
+export function MascotSays({ mood = 'happy', size = 76, children, highlight, lead }) {
   return (
     <div className="says">
       <Mascot mood={mood} size={size} talking />
       <div className="says__bubble">
         {highlight && <strong className="says__highlight">{highlight}</strong>}
+        {lead && <p className="says__lead">{lead}</p>}
         <div>{children}</div>
       </div>
     </div>

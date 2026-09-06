@@ -1,30 +1,4 @@
-import { useEffect, useState } from 'react'
-
-/** A floating "+20 XP" that acknowledges the work and gets out of the way. */
-function XpToast({ toast, onDone }) {
-  const [leaving, setLeaving] = useState(false)
-
-  useEffect(() => {
-    if (!toast) return
-    setLeaving(false)
-    const a = setTimeout(() => setLeaving(true), 1600)
-    const b = setTimeout(onDone, 2200)
-    return () => {
-      clearTimeout(a)
-      clearTimeout(b)
-    }
-  }, [toast, onDone])
-
-  if (!toast) return null
-  return (
-    <div className={`xptoast ${leaving ? 'xptoast--out' : ''}`} key={toast.id} role="status">
-      <span className="xptoast__amount">+{toast.amount} XP</span>
-      <span className="xptoast__label">{toast.label}</span>
-    </div>
-  )
-}
-
-export default function TopBar({ mode, setMode, mission, screen, built, total, parts, xp, toast, onClearToast, onHome }) {
+export default function TopBar({ mode, setMode, mission, screen, built, total, parts, xp, onHome }) {
   const showStats = Boolean(mission) && screen !== 'mission'
 
   return (
@@ -58,8 +32,6 @@ export default function TopBar({ mode, setMode, mission, screen, built, total, p
           Engineer
         </button>
       </div>
-
-      <XpToast toast={toast} onDone={onClearToast} />
     </header>
   )
 }

@@ -10,7 +10,7 @@ const FIT_STAMP = {
   no: { e: 'Wrong instrument', x: 'Wrong tool' },
 }
 
-export default function Review({ missionId, picks, mode, xp, onGoto, onRestart, onRefs, wholeModel, onWholeModel }) {
+export default function Review({ missionId, picks, mode, xp, onGoto, onRestart, onRefs, onShop, wholeModel, onWholeModel }) {
   const r = buildReview(missionId, picks)
   const mission = r.mission.mission
   // Give the drawing reader the actual build, so the model it makes matches
@@ -190,6 +190,23 @@ export default function Review({ missionId, picks, mode, xp, onGoto, onRestart, 
             ))}
           </div>
         </section>
+
+      <section className="panel card buildcta">
+        <div>
+          <span className="label">{mode === 'explorer' ? 'Now build it for real' : 'From design to hardware'}</span>
+          <h3 className="card__title">
+            {mode === 'explorer' ? 'You can actually build this one' : 'Build it for real'}
+          </h3>
+          <p style={{ color: 'var(--muted)', marginTop: 6 }}>
+            {mode === 'explorer'
+              ? 'Real space parts cost more than a house — but a satellite the size of a drinks can, doing all the same jobs, costs about as much as a video game. Here is the shopping list for your design, and how to put it together.'
+              : 'Spaceflight hardware is out of reach, but a CanSat-class model doing every job your design does is not. Here is the bill of materials assembled from your exact choices, with real prices and vendor links, followed by a step-by-step assembly and test guide.'}
+          </p>
+        </div>
+        <button className="btn btn--big" onClick={onShop}>
+          {mode === 'explorer' ? 'See the shopping list →' : 'Bill of materials →'}
+        </button>
+      </section>
 
       <div className="review__actions">
         <button className="btn" onClick={onRestart}>

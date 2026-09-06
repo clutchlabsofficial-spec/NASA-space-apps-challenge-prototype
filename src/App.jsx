@@ -4,11 +4,14 @@ import './styles/app.css'
 import { STATIONS, getStation, getOption, asList, pickKey, totalPicks, stationDone } from './data/stations/index.js'
 import { getMission } from './data/missions.js'
 import TopBar from './components/TopBar.jsx'
+import XpToast from './components/XpToast.jsx'
 import MissionSelect from './components/MissionSelect.jsx'
 import PathMap from './components/PathMap.jsx'
 import StationView from './components/StationView.jsx'
 import Review from './components/Review.jsx'
 import References from './components/References.jsx'
+import PartsList from './components/PartsList.jsx'
+import BuildGuide from './components/BuildGuide.jsx'
 
 // Experience points are a progress language children already read fluently.
 // They are earned for real work — deciding a subsystem, inventing a part,
@@ -17,7 +20,7 @@ export const XP = { choice: 20, invention: 60, sketch: 40, station: 30, finish: 
 
 export default function App() {
   const [mode, setMode] = useState('engineer')
-  const [screen, setScreen] = useState('mission') // mission | path | build | review | refs
+  const [screen, setScreen] = useState('mission') // mission | path | build | review | parts | guide | refs
   const [prevScreen, setPrevScreen] = useState('mission')
   const [missionId, setMissionId] = useState(null)
   const [stationId, setStationId] = useState(STATIONS[0].id)
@@ -120,8 +123,6 @@ export default function App() {
         total={STATIONS.length}
         parts={totalPicks(picks)}
         xp={xp}
-        toast={toast}
-        onClearToast={() => setToast(null)}
         onHome={() => (missionId ? setScreen('path') : restart())}
       />
 
@@ -163,6 +164,10 @@ export default function App() {
           onGoto={goto}
           onRestart={restart}
           onRefs={openRefs}
+          onShop={() => {
+            setScreen('parts')
+            window.scrollTo({ top: 0 })
+          }}
           wholeModel={wholeModel}
           onWholeModel={(m) => {
             setWholeModel(m)
@@ -171,7 +176,31 @@ export default function App() {
         />
       )}
 
+      {screen === 'parts' && (
+        <PartsList
+          picks={picks}
+          mode={mode}
+          onBack={() => setScreen('review')}
+          onBuild={() => {
+            setScreen('guide')
+            window.scrollTo({ top: 0 })
+          }}
+        />
+      )}
+
+      {screen === 'guide' && (
+        <BuildGuide
+          picks={picks}
+          mode={mode}
+          onBack={() => setScreen('parts')}
+          onAward={award}
+          onDone={() => setScreen('review')}
+        />
+      )}
+
       {screen === 'refs' && <References mode={mode} onBack={() => setScreen(prevScreen)} />}
+
+      <XpToast toast={toast} onDone={() => setToast(null)} />
     </>
   )
 }

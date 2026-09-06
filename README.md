@@ -289,6 +289,47 @@ Two motion decisions worth keeping: the "next up" node pulses three times and
 then stops, because an endlessly pulsing target is tiring and hard to tap
 confidently; and everything animated is disabled under `prefers-reduced-motion`.
 
+## Build it for real — parts, prices and assembly
+
+After the flight readiness review the app stops being a design tool and becomes a
+shopping list, then a workshop manual.
+
+**The honest framing this rests on:** nobody can buy spaceflight hardware on a
+school budget. What a child *can* build is a **CanSat-class model** — drinks-can
+sized, doing every job their design does: sense, compute, self-power, and downlink
+to a ground station they also built. The app says that plainly rather than
+implying they are building a spacecraft.
+
+**Parts** (`src/data/parts.js`) are keyed to the design choice they realise, so
+the list is assembled from that child's own decisions. Each entry says *why* this
+part stands in for the real thing — a Pico 2 W is an Arm Cortex-M, the same class
+of part real CubeSats fly; a silicon panel is a third the efficiency of the
+triple-junction gallium arsenide a satellite carries, for a twentieth of the price.
+
+Prices are quoted from the vendor's own product page in USD with the date checked
+(`PRICES_CHECKED`), and every part links out so the live price is one tap away.
+Where no price was verified the entry says "price varies" rather than guessing.
+Verified at the time of writing: Pico 2 W $7.00, RFM95W LoRa $19.95, BME280
+$14.95, AMG8833 thermal camera $44.95, solar LiPo charger $17.50, 9-DoF IMU
+$19.95, 2000 mAh LiPo $12.50, 6V 2W solar panel $20.95 — all Adafruit.
+
+**Some choices have no hobby equivalent, and the app says so.** A hyperspectral
+imager, a rad-hard processor, an X-band transmitter, a cryocooler, a real
+thruster — each gets a card explaining why it cannot be bought or built, and what
+to do instead (add a watchdog to your Pico; that *is* the real technique). That
+gap is the lesson, not a hole in the content.
+
+Safety is attached to the part that needs it: lithium cells, cut steel tape,
+Geiger tubes, lasers, balloon and rocket regulations.
+
+**The build guide** (`src/lib/buildSteps.js`) is taught the way the reference app
+teaches a chess opening: one step per screen, Nova saying the single thing worth
+remembering, a checklist you actually tick, and one Continue that stays disabled
+until you do. Steps adapt to the child's parts and are ordered by what can be
+*tested* at each point — blink an LED before anything else, power before radio,
+radio before payload, frame last, then shake test, freezer test, a day-in-the-life
+ops rehearsal, and flight.
+
 ## Responsive
 
 One codebase from a 320px phone to a 2560px desktop, with three real layouts

@@ -936,10 +936,14 @@ body { overflow-x: hidden; }
 
 /* ---------------- xp toast ---------------- */
 
+/* Bottom-centre, clear of the pinned action bar: a reward should never sit on
+   top of the progress bar or a control. */
 .xptoast {
-  position: absolute;
-  top: calc(100% + 10px);
+  position: fixed;
+  /* Above the pinned action bar, and above the home indicator on a phone. */
+  bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   left: 50%;
+  flex-wrap: nowrap;
   z-index: 60;
   display: flex;
   align-items: baseline;
@@ -954,15 +958,30 @@ body { overflow-x: hidden; }
   pointer-events: none;
 }
 .xptoast--out { animation: xp-out .5s ease forwards; }
-.xptoast__amount { font-family: var(--font-mono); font-weight: 600; font-size: 0.86rem; letter-spacing: 0.06em; }
-.xptoast__label { font-size: 0.84rem; opacity: .82; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xptoast__amount {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.xptoast__label {
+  font-size: 0.84rem;
+  opacity: .82;
+  min-width: 0;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 @keyframes xp-in {
-  from { transform: translate(-50%, -22px) scale(.86); opacity: 0; }
+  from { transform: translate(-50%, 22px) scale(.86); opacity: 0; }
   to   { transform: translate(-50%, 0) scale(1); opacity: 1; }
 }
 @keyframes xp-out {
-  to { transform: translate(-50%, -16px); opacity: 0; }
+  to { transform: translate(-50%, -14px); opacity: 0; }
 }
 
 /* ---------------- mascot ---------------- */
@@ -1010,6 +1029,11 @@ body { overflow-x: hidden; }
 .says__bubble::after {
   left: -7px;
   border-right-color: var(--card);
+}
+.says__lead {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
 }
 .says__highlight {
   display: inline-block;
@@ -1396,4 +1420,221 @@ body { overflow-x: hidden; }
   .mascot--talking,
   .mascot__blip,
   .pathnode--next .pathnode__btn { animation: none; }
+}
+
+/* =========================================================================
+   Shopping list and build guide
+   ========================================================================= */
+
+.parts { padding-bottom: 8px; }
+.parts__headline { flex: 1; min-width: 0; }
+.parts__headline h1 { font-size: clamp(1.5rem, 5vw, 2.1rem); margin-top: 4px; }
+
+/* Sticky only where the header is a single row and there is room for it. On a
+   phone it would slide under a two-row header, so the running total rides in
+   the action bar instead — always visible, never overlapping. */
+.basket {
+  z-index: 25;
+  padding: 14px 18px;
+  margin: 16px 0 22px;
+  background: var(--card);
+}
+.basket__row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.basket__total {
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.basket__note { margin-top: 8px; font-size: 0.82rem; color: var(--muted-dim); line-height: 1.5; }
+
+.parts__group { margin-bottom: 28px; }
+.parts__station {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 1.06rem;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line-faint);
+}
+.parts__station .mono { color: var(--primary); font-size: 0.66rem; letter-spacing: 0.14em; }
+
+.parts__forchoice { margin-bottom: 10px; }
+.parts__choicelabel {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted-dim);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.part {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 15px 16px;
+  border: 2px solid var(--line-faint);
+  border-radius: 14px;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color .15s ease;
+}
+.part:hover { border-color: var(--bg-accent); }
+.part--in { border-color: var(--primary); }
+.part__check { position: absolute; opacity: 0; pointer-events: none; }
+.part__mark {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--bg-accent);
+  border-radius: 7px;
+  color: var(--on-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.part--in .part__mark { background: var(--primary); border-color: var(--primary); }
+
+.part__body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.part__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.part__name { font-size: 1rem; font-weight: 600; }
+.part__qty { margin-left: 7px; color: var(--primary); font-size: 0.66rem; }
+.part__price {
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.part__vendor { color: var(--muted-dim); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.part__spec { color: var(--muted); font-size: 0.7rem; letter-spacing: 0.02em; text-transform: none; }
+.part__why { color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+.part__needs { color: var(--bg-accent); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: none; }
+.part__warning {
+  padding: 8px 11px;
+  border-left: 2px solid #ff6b8a;
+  border-radius: var(--r);
+  background: rgba(255, 107, 138, .07);
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.part__warning strong { color: #ff9db3; }
+.part__link { color: var(--primary); text-decoration: none; font-size: 0.66rem; letter-spacing: 0.1em; }
+.part__link:hover { text-decoration: underline; }
+
+/* The choices with no hobby equivalent — the honest gap, given its own look. */
+.part--none, .part--own {
+  display: block;
+  cursor: default;
+  border-style: dashed;
+  background: var(--bg);
+}
+.part--none:hover, .part--own:hover { border-color: var(--line-faint); }
+.part--own { border-color: var(--bg-accent); }
+.part__badge {
+  display: inline-block;
+  margin-bottom: 7px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--bg-accent);
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.part--own .part__badge { color: var(--primary); border-color: var(--primary); }
+
+.buildcta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  border: 2px solid var(--bg-accent);
+}
+.buildcta > div { flex: 1; min-width: 240px; }
+
+.actionbar__total {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.actionbar__total strong {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- build guide ---------------- */
+
+.guide { padding-bottom: 8px; }
+.guide__phase { color: var(--primary); margin-top: 14px; }
+.guide__title {
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  letter-spacing: -0.02em;
+  margin: 6px 0 4px;
+  text-wrap: balance;
+}
+
+.guide__warning {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 4px 0 18px;
+  border-left: 3px solid #ff6b8a;
+  border-radius: var(--r);
+  background: rgba(255, 107, 138, .08);
+}
+.guide__warning .mono { color: #ff9db3; white-space: nowrap; }
+.guide__warning p { color: var(--fg); opacity: .9; font-size: 0.94rem; }
+
+.guide__checks { display: flex; flex-direction: column; gap: 8px; }
+.guide__checks .label { margin-bottom: 2px; }
+
+.check {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 2px solid var(--line-faint);
+  border-radius: 12px;
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.98rem;
+  transition: border-color .15s ease, background .15s ease;
+  min-height: 52px;
+}
+.check:hover { border-color: var(--bg-accent); }
+.check--on { border-color: var(--primary); background: linear-gradient(180deg, rgba(200,155,255,.07), var(--card) 70%); }
+.check input { position: absolute; opacity: 0; pointer-events: none; }
+.check__mark {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--bg-accent);
+  border-radius: 7px;
+  color: var(--on-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.check--on .check__mark { background: var(--primary); border-color: var(--primary); }
+
+.guide--done { text-align: center; padding-top: 40px; }
+.guide__trophy { display: flex; justify-content: center; margin-bottom: 18px; }
+.guide--done h1 { font-size: clamp(1.9rem, 6vw, 2.8rem); margin-bottom: 12px; }
+.guide--done p { color: var(--muted); max-width: 46ch; margin: 0 auto 26px; font-size: 1.02rem; }
+.guide__done-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+@media (min-width: 700px) {
+  .basket { position: sticky; top: 74px; }
+}
+
+@media (max-width: 699px) {
+  .part__head { flex-direction: column; gap: 2px; }
+  .buildcta .btn { width: 100%; }
 }
