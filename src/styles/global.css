@@ -1,0 +1,149 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Starfield + faint nebula wash. Pure CSS so there is no asset to load. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1px 1px at 12% 18%, rgba(240,230,255,.55), transparent),
+    radial-gradient(1px 1px at 32% 62%, rgba(240,230,255,.35), transparent),
+    radial-gradient(1px 1px at 58% 28%, rgba(240,230,255,.45), transparent),
+    radial-gradient(1px 1px at 78% 72%, rgba(240,230,255,.3), transparent),
+    radial-gradient(1px 1px at 88% 12%, rgba(240,230,255,.4), transparent),
+    radial-gradient(1px 1px at 7% 82%, rgba(240,230,255,.3), transparent),
+    radial-gradient(1px 1px at 44% 90%, rgba(240,230,255,.25), transparent),
+    radial-gradient(1px 1px at 68% 46%, rgba(240,230,255,.3), transparent),
+    radial-gradient(900px 600px at 82% 6%, rgba(101,65,124,.20), transparent 70%),
+    radial-gradient(700px 500px at 8% 96%, rgba(104,79,123,.16), transparent 70%);
+}
+
+#root { position: relative; z-index: 1; }
+
+h1, h2, h3, h4 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+p { margin: 0 0 0.9em; }
+p:last-child { margin-bottom: 0; }
+
+a { color: var(--primary); }
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+::selection { background: var(--primary); color: var(--on-primary); }
+
+/* ---------- shared primitives ---------- */
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted-dim);
+}
+
+.shell {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--pad) 96px;
+}
+
+.panel {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+/* Technical corner brackets — the mission-control tell */
+.panel::before,
+.panel::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--bg-accent);
+  border-style: solid;
+  pointer-events: none;
+}
+.panel::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+.panel::after { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: filter .15s ease, transform .15s ease;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.12); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+
+.btn--ghost {
+  background: var(--secondary);
+  color: var(--on-secondary);
+  border-color: var(--line);
+}
+.btn--bare {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line-faint);
+}
+.btn--bare:hover { color: var(--fg); border-color: var(--line-strong); }
+
+.rule {
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+  border: 0;
+  margin: 0;
+}

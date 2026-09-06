@@ -1,0 +1,28 @@
+:root {
+  /* Non-negotiable palette */
+  --bg: #050012;
+  --card: #040121;
+  --fg: #f0e6ff;
+  --primary: #c89bff;
+  --on-primary: #050012;
+  --secondary: #1d123b;
+  --on-secondary: #f0e6ff;
+  --accent: #684f7b;
+  --bg-accent: #65417c;
+
+  /* Derived only — every one of these is one of the above at an alpha */
+  --line: rgba(104, 79, 123, 0.45);
+  --line-strong: rgba(104, 79, 123, 0.9);
+  --line-faint: rgba(104, 79, 123, 0.22);
+  --muted: rgba(240, 230, 255, 0.62);
+  --muted-dim: rgba(240, 230, 255, 0.4);
+  --glow: rgba(200, 155, 255, 0.18);
+  --wash: rgba(101, 65, 124, 0.14);
+
+  --font-display: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --r: 2px;
+  --pad: clamp(16px, 2.2vw, 28px);
+  --maxw: 1360px;
+}
