@@ -43,7 +43,7 @@ export default function BuildGuide({ picks, mode, onBack, onAward, onDone }) {
         <div className="guide__trophy">
           <Mascot mood="excited" size={128} talking />
         </div>
-        <h1>{mode === 'explorer' ? 'You built a satellite!' : 'Build complete'}</h1>
+        <h1 className="poster poster--lg">{mode === 'explorer' ? 'You built a satellite!' : 'Build complete'}</h1>
         <p>
           {mode === 'explorer'
             ? 'You designed it, you bought the parts, you wired it up, you tested it and you flew it. That is exactly what a real space team does — just with a bigger budget.'
@@ -72,7 +72,7 @@ export default function BuildGuide({ picks, mode, onBack, onAward, onDone }) {
       </header>
 
       <div className="guide__phase mono">{t(step.phase, mode)}</div>
-      <h1 className="guide__title">{t(step.title, mode)}</h1>
+      <h1 className="guide__title poster poster--md">{t(step.title, mode)}</h1>
 
       <MascotSays mood="thinking" size={68} lead={t(step.nova, mode)}>
         {t(step.body, mode)}

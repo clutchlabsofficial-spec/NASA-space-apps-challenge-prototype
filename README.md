@@ -351,6 +351,36 @@ pointer at any width gets them too.
 scroll-into-view and the page's scroll-to-top both check it, because a
 `behavior: 'smooth'` in script ignores the CSS media query.
 
+## 3D and the poster layer
+
+**Your satellite assembles in 3D as you build it.** `src/lib/satelliteModel.js`
+turns the current picks into the same parts vocabulary the sketch reader emits,
+so one renderer draws both "the satellite you designed" and "the satellite you
+drew" — and they sit side by side at the end. Parts that were not in the previous
+model animate in with a slight overshoot, so adding a subsystem is something you
+watch happen rather than something that has silently already happened.
+
+`Model3D.jsx` runs three variants — `hero` (full-bleed wallpaper behind the
+landing type), `build` (the path map and review, extra framing margin because
+deployed antennas reach well past the body) and `inline` (a sketch result). It
+carries its own starfield, a three-source lighting rig (sun, planet-shine, cold
+rim), raycast part naming, and an IntersectionObserver that stops rendering when
+the canvas is off-screen — a phone should not burn battery on a canvas nobody
+can see.
+
+**Typography** is three faces with three jobs: **Anton** for the poster
+statements, **Chakra Petch** as the working UI voice, **IBM Plex Mono** for data
+and labels. The fallback stack matters more than usual here — Anton is a webfont
+and a hackathon venue's wifi may not serve it, so the next name is **Impact**,
+heavy and condensed on every major platform. A light grotesque fallback would
+collapse the whole design.
+
+Borrowed deliberately from the reference boards: data annotations along the
+bottom of the hero (real orbital figures, not decoration), rotated sticker
+roundels used once per screen, scroll reveals that animate *from a visible
+resting state* so a screenshot or a no-JS render still shows everything, and
+numbered section indices.
+
 ## Visual system
 
 Dark mission-control UI. Chakra Petch (geometric technical display) paired with IBM Plex Mono

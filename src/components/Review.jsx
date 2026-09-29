@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { buildReview, NEXT_STEPS } from '../lib/review.js'
 import { STATIONS, resolvePicks } from '../data/stations/index.js'
 import { t, Note, SourceChips } from './bits.jsx'
 import CubeSatSVG from './CubeSatSVG.jsx'
+import Model3D from './Model3D.jsx'
+import { buildSatelliteModel } from '../lib/satelliteModel.js'
 import SketchStudio from './SketchStudio.jsx'
 
 const FIT_STAMP = {
@@ -11,6 +14,7 @@ const FIT_STAMP = {
 }
 
 export default function Review({ missionId, picks, mode, xp, onGoto, onRestart, onRefs, onShop, wholeModel, onWholeModel }) {
+  const [hoveredPart, setHoveredPart] = useState(null)
   const r = buildReview(missionId, picks)
   const mission = r.mission.mission
   // Give the drawing reader the actual build, so the model it makes matches
@@ -98,8 +102,20 @@ export default function Review({ missionId, picks, mode, xp, onGoto, onRestart, 
 
         {/* ---- right column ---- */}
         <div>
-          <section className="panel card">
-            <CubeSatSVG picks={picks} />
+          <section className="panel card reviewcraft">
+            <span className="label">{mode === 'explorer' ? 'Your satellite' : 'As designed'}</span>
+            <div className="reviewcraft__3d">
+              <Model3D model={buildSatelliteModel(picks)} variant="build" onPartHover={setHoveredPart} />
+              <span className="reviewcraft__hint mono">
+                {hoveredPart
+                  ? `▸ ${hoveredPart}`
+                  : mode === 'explorer' ? 'Drag to spin it' : 'Drag to orbit'}
+              </span>
+            </div>
+            <details className="reviewcraft__cut">
+              <summary className="mono">{mode === 'explorer' ? 'See the inside view' : 'Engineering cutaway'}</summary>
+              <CubeSatSVG picks={picks} />
+            </details>
           </section>
 
           <section className="panel card">

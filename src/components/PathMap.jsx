@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react'
-import { STATIONS, resolvePicks, stationDone } from '../data/stations/index.js'
-import CubeSatSVG from './CubeSatSVG.jsx'
+import { useEffect, useRef, useState } from 'react'
+import { useMemo } from 'react'
+import { STATIONS, resolvePicks, stationDone, totalPicks } from '../data/stations/index.js'
+import { buildSatelliteModel } from '../lib/satelliteModel.js'
+import Model3D from './Model3D.jsx'
 import Mascot, { MascotSays } from './Mascot.jsx'
+import Reveal from './Reveal.jsx'
 import { t } from './bits.jsx'
 
 // The build path. Eleven subsystems as a winding run of nodes, so a child can
@@ -16,6 +19,12 @@ const OFFSETS = [0, 0.35, 0.7, 1, 0.7, 0.35, 0, 0.35, 0.7, 1, 0.7]
 export default function PathMap({ mode, mission, picks, built, allDone, onOpen, onFinish }) {
   const nextIndex = STATIONS.findIndex((s) => !stationDone(picks, s.id))
   const currentRef = useRef(null)
+  const [hovered, setHovered] = useState(null)
+
+  // The satellite is rebuilt whenever a choice changes, and new parts animate
+  // in — so adding a subsystem is something you watch happen to your spacecraft.
+  const model = useMemo(() => buildSatelliteModel(picks), [picks])
+  const parts = totalPicks(picks)
 
   useEffect(() => {
     currentRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' })
@@ -27,15 +36,32 @@ export default function PathMap({ mode, mission, picks, built, allDone, onOpen, 
         <span className="path__banner-eyebrow mono">
           {mission.codename} · {mode === 'explorer' ? 'Your mission' : 'Mission objective'}
         </span>
-        <h1>{t(mission.name, mode)}</h1>
+        <h1 className="poster poster--md">{t(mission.name, mode)}</h1>
         <p>{t(mission.tagline, mode)}</p>
       </div>
 
-      <div className="path__hero panel">
-        <CubeSatSVG picks={picks} />
-        <div className="path__hero-caption">
-          <span className="label">{mode === 'explorer' ? 'Your satellite so far' : 'Current configuration'}</span>
-          <strong>{built}/{STATIONS.length}</strong>
+      <div className="path__hero">
+        <Model3D model={model} variant="build" onPartHover={setHovered} />
+        <div className="path__hero-overlay">
+          <span className="path__hero-label mono">
+            {hovered
+              ? `▸ ${hovered}`
+              : mode === 'explorer' ? 'Drag to spin your satellite' : 'Drag to orbit · hover a part to name it'}
+          </span>
+        </div>
+        <div className="path__stats">
+          <span className="datum">
+            <span className="datum__k mono">{mode === 'explorer' ? 'Parts on' : 'Subsystems'}</span>
+            <span className="datum__v mono">{built}/{STATIONS.length}</span>
+          </span>
+          <span className="datum">
+            <span className="datum__k mono">{mode === 'explorer' ? 'Pieces' : 'Components'}</span>
+            <span className="datum__v mono">{parts}</span>
+          </span>
+          <span className="datum datum--right">
+            <span className="datum__k mono">{mode === 'explorer' ? 'Still to build' : 'Outstanding'}</span>
+            <span className="datum__v mono">{STATIONS.length - built}</span>
+          </span>
         </div>
       </div>
 

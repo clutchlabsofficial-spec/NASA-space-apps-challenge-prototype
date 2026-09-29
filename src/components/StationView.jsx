@@ -42,7 +42,7 @@ export default function StationView({ station, picks, mode, missionId, onToggle,
 
       <div className="lesson__title">
         <span className="mono lesson__code">{station.code}</span>
-        <h1>{t(station.name, mode)}</h1>
+        <h1 className="poster poster--md">{t(station.name, mode)}</h1>
         <p>{t(station.subtitle, mode)}</p>
       </div>
 

@@ -25,10 +25,24 @@
   --glow: rgba(200, 155, 255, 0.18);
   --wash: rgba(101, 65, 124, 0.14);
 
+  /* Three faces, three jobs. Anton carries the statements — heavy, condensed,
+     the kind of type that can sit over a photograph and still win. Chakra Petch
+     is the working UI voice. IBM Plex Mono is reserved for data, labels and
+     anything that should read as an instrument. */
+  /* Impact is the fallback that matters: Anton is a webfont, and a hackathon
+     venue's wifi (or a blocked font host) will hand the user the next name in
+     this list. Impact is heavy and condensed on Windows, macOS and Android, so
+     the design survives; a light grotesque fallback would collapse it. */
+  --font-poster: 'Anton', Impact, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Narrow', sans-serif;
   --font-display: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   --r: 2px;
   --pad: clamp(16px, 2.2vw, 28px);
   --maxw: 1360px;
+
+  /* Poster type runs to the edges of the viewport rather than to a fixed size. */
+  --poster-xl: clamp(3.4rem, 15vw, 10rem);
+  --poster-lg: clamp(2.6rem, 9vw, 6rem);
+  --poster-md: clamp(1.9rem, 6vw, 3.4rem);
 }

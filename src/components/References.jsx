@@ -4,7 +4,7 @@ export default function References({ onBack, mode }) {
   return (
     <div className="shell refs">
       <div className="mono" style={{ color: 'var(--primary)' }}>Reference list</div>
-      <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', margin: '12px 0' }}>
+      <h1 className="poster poster--md" style={{ margin: '12px 0' }}>
         {mode === 'explorer' ? 'Where all these facts come from' : 'Everything in this app is sourced'}
       </h1>
       <p style={{ color: 'var(--muted)' }}>

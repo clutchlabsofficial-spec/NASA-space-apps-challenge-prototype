@@ -99,7 +99,7 @@ export default function PartsList({ picks, mode, onBack, onBuild }) {
         <button className="lesson__close" onClick={onBack} aria-label="Back">✕</button>
         <div className="parts__headline">
           <span className="mono lesson__code">{mode === 'explorer' ? 'Shopping list' : 'Bill of materials'}</span>
-          <h1>{mode === 'explorer' ? 'Build it for real' : 'Build it for real'}</h1>
+          <h1 className="poster poster--md">Build it for real</h1>
         </div>
       </header>
 
