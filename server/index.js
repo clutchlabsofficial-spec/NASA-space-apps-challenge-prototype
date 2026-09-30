@@ -64,7 +64,7 @@ app.post('/api/idea', wrap(async (req, res) => {
   const sessionId = sessionOf(req)
   rateLimit(sessionId)
 
-  const { stationId, missionId, mode, text, image, picks } = req.body || {}
+  const { stationId, missionId, mode, age, text, image, picks } = req.body || {}
   if (!STATION_IDS.includes(stationId)) {
     throw Object.assign(new Error('Unknown subsystem'), { status: 400 })
   }
@@ -78,6 +78,11 @@ app.post('/api/idea', wrap(async (req, res) => {
     stationId,
     missionId,
     mode: mode === 'explorer' ? 'explorer' : 'engineer',
+    // Clamped rather than trusted: age only ever steers the writing voice, but
+    // it lands in a prompt, so it is bounded to a plausible integer or dropped.
+    age: Number.isFinite(Number(age)) && Number(age) >= 4 && Number(age) <= 110
+      ? Math.trunc(Number(age))
+      : null,
     text: typeof text === 'string' ? text.slice(0, MAX_TEXT) : '',
     imageBase64: img?.base64,
     imageMediaType: img?.mediaType,

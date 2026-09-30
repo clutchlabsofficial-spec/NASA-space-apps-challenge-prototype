@@ -10,13 +10,18 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js",
-    "build:artifact": "VITE_TARGET=artifact vite build && node scripts/build-artifact.mjs"
+    "build:artifact": "VITE_TARGET=artifact vite build && node scripts/build-artifact.mjs",
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:screens": "node scripts/screens.mjs",
+    "test": "node scripts/smoke.mjs && node scripts/screens.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
+    "animejs": "^4.5.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "motion": "^13.4.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.185.1",
@@ -25,6 +30,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^10.0.5",
+    "playwright": "^1.63.0",
     "vite": "^5.4.11"
   }
 }

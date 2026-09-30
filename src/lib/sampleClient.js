@@ -26,7 +26,7 @@ export async function sampleAvailable() {
   return Boolean(await getSample())
 }
 
-export async function reviewIdeaViaSample({ stationId, missionId, mode, text, image, picks }) {
+export async function reviewIdeaViaSample({ stationId, missionId, mode, age, text, image, picks }) {
   const sample = await getSample()
   if (!sample) throw new Error('The idea reviewer is not available in this view.')
 
@@ -41,7 +41,7 @@ export async function reviewIdeaViaSample({ stationId, missionId, mode, text, im
   }
 
   const instruction = [
-    buildSystemPrompt({ stationId, missionId, mode }),
+    buildSystemPrompt({ stationId, missionId, mode, age }),
     '',
     '## Output',
     'Reply with JSON only, matching this schema exactly. No prose outside the JSON.',

@@ -78,6 +78,22 @@ export default function BuildGuide({ picks, mode, onBack, onAward, onDone }) {
         {t(step.body, mode)}
       </MascotSays>
 
+      {/* The literal physical sequence. This is the part a child follows with
+          their hands on the parts — which screw, which way, in what order. */}
+      {step.hands?.length > 0 && (
+        <ol className="hands">
+          <span className="label hands__label">
+            {mode === 'explorer' ? 'Do this, in this order' : 'Physical sequence'}
+          </span>
+          {step.hands.map((h, i) => (
+            <li key={i} className="hands__step">
+              <span className="hands__n squeeze">{i + 1}</span>
+              <p>{t(h, mode)}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+
       {step.warning && (
         <div className="guide__warning">
           <span className="mono">{mode === 'explorer' ? '⚠ Careful' : '⚠ Safety'}</span>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { STATIONS, resolvePicks, asList, isCustom } from '../data/stations/index.js'
 import { partsFor, isBuyable, COMMON_PARTS, PRICES_CHECKED, PRICE_NOTE } from '../data/parts.js'
+import { sourcesFor, BUYING_ADVICE, IMAGES_CHECKED } from '../data/partSources.js'
 import { t } from './bits.jsx'
 import { MascotSays } from './Mascot.jsx'
 
@@ -18,10 +19,24 @@ function PartCard({ part, mode, checked, onToggle }) {
   }
 
   const qty = part.quantity || 1
+  const src = sourcesFor(part)
+
   return (
     <label className={`part ${checked ? 'part--in' : ''}`}>
       <input type="checkbox" checked={checked} onChange={onToggle} className="part__check" />
       <span className="part__mark" aria-hidden="true">{checked ? '✓' : ''}</span>
+
+      {/* The vendor's own photograph of the exact part, so a child knows what
+          to look for in a shop and can tell when a listing is the wrong thing. */}
+      {src.image ? (
+        <span className="part__photo">
+          <img src={src.image} alt={part.name} loading="lazy" decoding="async" />
+        </span>
+      ) : (
+        <span className="part__photo part__photo--none" aria-hidden="true">
+          <span className="squeeze">no photo</span>
+        </span>
+      )}
 
       <span className="part__body">
         <span className="part__head">
@@ -47,11 +62,21 @@ function PartCard({ part, mode, checked, onToggle }) {
             <strong>{mode === 'explorer' ? 'Careful:' : 'Safety:'}</strong> {t(part.warning, mode)}
           </span>
         )}
-        {part.url && (
-          <a className="part__link mono" href={part.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-            {mode === 'explorer' ? 'See it in the shop ↗' : 'View product page ↗'}
-          </a>
-        )}
+        <span className="part__buy" onClick={(e) => e.stopPropagation()}>
+          {src.buy.map((b) => (
+            <a
+              key={b.url}
+              className={`buylink buylink--${b.kind}`}
+              href={b.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              title={b.note}
+            >
+              <span className="buylink__label">{b.kind === 'exact' ? (mode === 'explorer' ? 'This exact one' : 'This exact part') : b.label}</span>
+              {b.region && <span className="buylink__region mono">{b.region}</span>}
+            </a>
+          ))}
+        </span>
       </span>
     </label>
   )
@@ -125,6 +150,23 @@ export default function PartsList({ picks, mode, onBack, onBuild }) {
           {t(PRICE_NOTE, mode)} <span className="mono">Checked {PRICES_CHECKED}.</span>
         </p>
       </div>
+
+      {/* Buying safely is a skill, and it is the one part of this screen where
+          getting it wrong costs a real family real money. So it is stated
+          plainly, near the top, not buried at the bottom. */}
+      <section className="safebuy">
+        <span className="squeeze safebuy__tag">
+          {mode === 'explorer' ? 'Before anybody buys anything' : 'Buying safely'}
+        </span>
+        <ul>
+          {(mode === 'explorer' ? BUYING_ADVICE.x : BUYING_ADVICE.e).map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+        <p className="safebuy__meta mono">
+          Product photos and links checked {IMAGES_CHECKED}.
+        </p>
+      </section>
 
       {groups.map(({ station, entries }) => (
         <section className="parts__group" key={station.id}>

@@ -5,18 +5,56 @@
      carets and text selection inside form controls match. */
   color-scheme: dark;
 
-  /* Non-negotiable palette */
+  /* ── The deep ground ───────────────────────────────────────────────────
+     These four stay. They are the colour of the sky away from any star, and
+     everything else in this file is a light source painted on top of them. */
   --bg: #050012;
   --card: #040121;
   --fg: #f0e6ff;
-  --primary: #c89bff;
   --on-primary: #050012;
   --secondary: #1d123b;
   --on-secondary: #f0e6ff;
+
+  /* ── The nebula ramp ───────────────────────────────────────────────────
+     Real nebulae are not one hue. Hydrogen-alpha burns red, ionised oxygen
+     burns teal, hot young stars run blue-white, and dust scatters gold. The
+     palette below is that spread, so the app can glow in more than one colour
+     without ever leaving space.
+
+     Andromeda red is the warm anchor: M31's star-forming rings photograph
+     this colour, and it is the one hue the old all-purple screen could not
+     make. It carries heat, urgency and the launch moment. */
+  --andromeda: #ff4d6d;
+  --andromeda-deep: #c9184a;
+  --ember: #ff9e5e;
+  --gold: #ffd76e;
+  --ion: #5ef1ff;
+  --ion-deep: #0ea5c4;
+  --cobalt: #4a6bff;
+  --cobalt-deep: #1b2a78;
+  --magenta: #ff7ae0;
+  --violet: #c89bff;
+
+  /* Primary stays violet — it is the app's own colour and every CTA wears it.
+     The nebula hues are accents that mark *what kind* of thing you are looking
+     at, never decoration for its own sake. */
+  --primary: var(--violet);
   --accent: #684f7b;
   --bg-accent: #65417c;
 
-  /* Derived only — every one of these is one of the above at an alpha */
+  /* ── Semantic roles ────────────────────────────────────────────────────
+     A child should be able to learn the colour code without being told it.
+     Each subsystem family gets one hue and keeps it everywhere: on its path
+     node, its lesson header, its part chips and its 3D highlight. */
+  --role-power: var(--gold);        /* solar, batteries — energy */
+  --role-sense: var(--ion);         /* payload, sensors — seeing */
+  --role-think: var(--violet);      /* brain, software — deciding */
+  --role-move: var(--andromeda);    /* ADCS, propulsion — motion */
+  --role-talk: var(--magenta);      /* comms, ground — speaking */
+  --role-body: var(--ember);        /* structure, thermal — the shell */
+  --role-orbit: var(--cobalt);      /* orbit, launch — where it goes */
+
+  /* Derived only — each is one of the above at an alpha. */
   --line: rgba(104, 79, 123, 0.45);
   --line-strong: rgba(104, 79, 123, 0.9);
   --line-faint: rgba(104, 79, 123, 0.22);
@@ -24,18 +62,36 @@
   --muted-dim: rgba(240, 230, 255, 0.4);
   --glow: rgba(200, 155, 255, 0.18);
   --wash: rgba(101, 65, 124, 0.14);
+  --glow-red: rgba(255, 77, 109, 0.22);
+  --glow-ion: rgba(94, 241, 255, 0.18);
+  --glow-gold: rgba(255, 215, 110, 0.2);
 
-  /* Three faces, three jobs. Anton carries the statements — heavy, condensed,
-     the kind of type that can sit over a photograph and still win. Chakra Petch
-     is the working UI voice. IBM Plex Mono is reserved for data, labels and
-     anything that should read as an instrument. */
-  /* Impact is the fallback that matters: Anton is a webfont, and a hackathon
-     venue's wifi (or a blocked font host) will hand the user the next name in
-     this list. Impact is heavy and condensed on Windows, macOS and Android, so
-     the design survives; a light grotesque fallback would collapse it. */
-  --font-poster: 'Anton', Impact, 'Haettenschweiler', 'Arial Narrow Bold', 'Arial Narrow', sans-serif;
+  /* Deep-field gradients — the background is never flat. Two faint nebulae
+     and a cold blue rim, all well under the text contrast floor. */
+  --deepfield:
+    radial-gradient(1200px 700px at 12% -5%, rgba(201, 24, 74, 0.16), transparent 62%),
+    radial-gradient(900px 600px at 92% 8%, rgba(74, 107, 255, 0.14), transparent 60%),
+    radial-gradient(1000px 800px at 50% 108%, rgba(101, 65, 124, 0.2), transparent 64%);
+
+  /* ── Type ──────────────────────────────────────────────────────────────
+     Archivo is a variable face with a real width axis (wdth 62–125). That
+     matters here: the poster type is not just wide, it can *stretch* — the
+     headline animates along the axis on entrance, and a single family covers
+     ultra-wide statements and normal running text without loading two fonts.
+
+     The fallback stack is chosen to survive a blocked font host. Arial Black
+     and Helvetica-Bold are the widest heavy faces present on Windows, macOS
+     and Android; falling through to a normal-width grotesque would collapse
+     the whole look, which is exactly what happened the first time. */
+  --font-poster: 'Archivo', 'Arial Black', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-display: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Width-axis stops, used as custom properties so animation can interpolate
+     them. A browser without the variable font simply ignores them. */
+  --wdth-wide: 125;
+  --wdth-mid: 100;
+  --wdth-narrow: 78;
 
   --r: 2px;
   --pad: clamp(16px, 2.2vw, 28px);
@@ -45,4 +101,36 @@
   --poster-xl: clamp(3.4rem, 15vw, 10rem);
   --poster-lg: clamp(2.6rem, 9vw, 6rem);
   --poster-md: clamp(1.9rem, 6vw, 3.4rem);
+}
+
+/* The stretchy poster face. Anything wearing .stretch gets the widest cut of
+   Archivo plus tight tracking, which is what makes an extended face read as
+   deliberate rather than merely large. */
+.stretch,
+.poster-xl,
+.poster-lg,
+.poster-md {
+  font-family: var(--font-poster);
+  font-variation-settings: 'wdth' var(--wdth-wide), 'wght' 800;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.88;
+  text-transform: uppercase;
+}
+
+.poster-xl { font-size: var(--poster-xl); }
+.poster-lg { font-size: var(--poster-lg); }
+.poster-md { font-size: var(--poster-md); }
+
+/* A narrow cut for labels that sit beside wide type — the contrast between
+   the two widths is the whole point of using a variable family. */
+.squeeze {
+  font-family: var(--font-poster);
+  font-variation-settings: 'wdth' var(--wdth-narrow), 'wght' 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --deepfield: radial-gradient(1000px 800px at 50% 108%, rgba(101, 65, 124, 0.2), transparent 64%); }
 }

@@ -6,6 +6,8 @@
 import { getStation, resolvePicks } from '../data/stations/index.js'
 import { getMission } from '../data/missions.js'
 import { tagMenuFor, TAG_GLOSSARY } from '../data/vocab.js'
+import { readerBrief } from './age.js'
+import { lessonFor } from '../data/lessons.js'
 
 export const VERDICTS = ['works', 'partly', 'wont-work', 'off-topic']
 export const MAX_IDEA_TEXT = 1200
@@ -46,7 +48,21 @@ function referenceMaterial(station) {
     .join('\n\n')
 }
 
-export function buildSystemPrompt({ stationId, missionId, mode }) {
+/** The trade-off axis the child was just taught, so the model can refer back
+ *  to it by name ("you have gone for the fold-out end of that trade") instead
+ *  of re-explaining the whole subsystem. */
+function lessonSummary(stationId) {
+  const lesson = lessonFor(stationId)
+  if (!lesson) return 'No lesson recorded for this subsystem.'
+  const ends = lesson.axis.ends.map((x) => `  - ${x.name.e}: ${x.body.e}`).join('\n')
+  return [
+    `The trade-off they were taught: ${lesson.axis.label.e}`,
+    ends,
+    `The rule of thumb they were given: ${lesson.rule.e}`,
+  ].join('\n')
+}
+
+export function buildSystemPrompt({ stationId, missionId, mode, age }) {
   const station = getStation(stationId)
   const mission = missionId ? getMission(missionId) : null
   const tagMenu = tagMenuFor(stationId)
@@ -57,9 +73,7 @@ export function buildSystemPrompt({ stationId, missionId, mode }) {
 A child has invented their own idea for the ${station.name.e} subsystem instead of picking one of the standard options. Your job is to take their idea completely seriously and tell them the truth about it.
 
 ## How to talk to them
-${mode === 'explorer'
-    ? 'This child is under 11. Use short sentences and everyday words. Explain by comparison to things they already know. Never use a technical term without immediately explaining it. Warm, never patronising.'
-    : 'This child is 11 to 18. Use real engineering vocabulary and explain it as you go. Treat them as a junior colleague, not a pupil.'}
+${readerBrief(age, mode)}
 
 ## Rules that matter more than being nice
 - Be honest. If their idea cannot work, say clearly why, name the physics, and treat that as interesting rather than as failure. Real engineers kill ideas every day.
@@ -76,6 +90,12 @@ The rest of the app reasons about their satellite purely through tags. Choose th
 ${glossary}
 
 Choose the minimum set that honestly describes the engineering behaviour of their invention. If the idea is off-topic or too vague to have engineering properties, return an empty array.
+
+## What this child has just been taught
+They did not pick from a menu. They read a short lesson about this subsystem
+and then described their own design in their own words. Build on what they
+already know rather than repeating it back to them.
+${lessonSummary(stationId)}
 
 ## The child's mission
 ${mission ? `${mission.name.e} — ${mission.tagline.e}` : 'Not yet chosen.'}

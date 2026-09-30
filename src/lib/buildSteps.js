@@ -341,6 +341,137 @@ export function buildSteps(picks, mode) {
     })
   }
 
+
+  /* ── The physical build ────────────────────────────────────────────────
+     Everything above gets the electronics working on the bench. These steps
+     are the part a child actually does with their hands: which screw, which
+     way round, what order, and how tight. The `hands` array is a literal
+     sequence of physical actions — it is what the old guide was missing.
+
+     The order here is not arbitrary. You always build a board stack from the
+     bottom up, you always leave the frame until last because it blocks access
+     to everything inside it, and you always tighten a pattern of fasteners in
+     a cross rather than one at a time, so the boards do not sit skewed. Those
+     are the same rules used on real flight hardware. */
+
+  add({
+    id: 'standoffs',
+    phase: T('Put it together', 'Build the body'),
+    title: T('Build the stack: standoffs first', 'Screw in the little posts'),
+    nova: T(
+      'This is the PC/104 idea in miniature — real CubeSat boards stack on standoffs in exactly this way.',
+      'Real satellites stack their circuit boards just like this!',
+    ),
+    body: T(
+      'Standoffs are the small threaded posts that hold each board a fixed distance above the next. Getting them on straight now is what stops the whole stack sitting crooked later.',
+      'Standoffs are little posts that hold your circuit boards apart so they do not touch. Getting them straight now saves a lot of bother later.',
+    ),
+    hands: [
+      T('Take four M3 nylon screws and push one up through each corner hole of the bottom board, from underneath.', 'Push four screws up through the four corner holes of the bottom board, from below.'),
+      T('Thread a standoff onto each screw from the top and turn it until finger-tight. Nylon strips easily — finger-tight really does mean fingers only, no tools.', 'Twist a little post onto each screw with your fingers. Do not use a screwdriver — these are plastic and snap easily.'),
+      T('Check the board sits flat on the table. If it rocks, one standoff is cross-threaded — back it off and start that corner again.', 'Put the board down. Does it wobble? If it does, one post is on crooked. Undo it and try again.'),
+    ],
+    checklist: [
+      T('Four standoffs on, all finger-tight', 'Four posts on, all done up by hand'),
+      T('The board sits flat with no rock', 'The board does not wobble'),
+    ],
+    warning: T(
+      'Do not use a screwdriver on nylon standoffs. They shear off inside the board and then you have a very bad afternoon.',
+      'No screwdrivers on the plastic posts! They snap off inside and are horrible to get out.',
+    ),
+    xp: 30,
+  })
+
+  if (brain.length) {
+    add({
+      id: 'stack-brain',
+      phase: T('Put it together', 'Build the body'),
+      title: T(`Stack the ${brain[0]} on top`, 'Put the brain on the stack'),
+      nova: T(
+        'Bottom-up, every time. You can always add a board on top; you cannot get to one you have buried.',
+        'Always build upwards. You can add more on top, but you cannot reach something you have buried!',
+      ),
+      body: T(
+        `The ${brain[0]} goes on next, sitting on the standoffs you just fitted. Line up all four holes before you push it down — forcing a board onto three standoffs and one near-miss is how pins get bent.`,
+        `Your ${brain[0]} goes on next, resting on the posts. Line up all four holes first, then lower it straight down. Do not force it!`,
+      ),
+      hands: [
+        T('Hold the board above the standoffs and line up all four corner holes at once.', 'Hold the board over the four posts and line up all four holes.'),
+        T('Lower it straight down. It should drop on with no force at all. If it does not, something is misaligned — lift it off and look, do not push.', 'Lower it straight down. It should just drop on. If it will not, do not push — lift it off and look.'),
+        T('Add the next four screws, but only turn each one two or three turns for now — leave them all loose.', 'Put four more screws in, but only turn them a little. Leave them loose for now.'),
+        T('Now tighten them in a cross: front-left, back-right, front-right, back-left. Tightening in a cross pulls the board down evenly instead of tipping it.', 'Now do them up properly, but go diagonally: one corner, then the opposite corner, then the other two. That keeps the board level.'),
+      ],
+      checklist: [
+        T('All four holes lined up before any force was applied', 'All four holes lined up first'),
+        T('Screws tightened in a cross pattern, finger-tight', 'Screws done up diagonally, by hand'),
+        T('No board flex when you press the middle', 'The board does not bend when you press it'),
+      ],
+      xp: 30,
+    })
+  }
+
+  if (battery.length) {
+    add({
+      id: 'mount-battery',
+      phase: T('Put it together', 'Build the body'),
+      title: T('Mount the battery — the one that must not move', 'Fix the battery down properly'),
+      nova: T(
+        'A loose battery is the single most dangerous thing in this build. Real spacecraft strap theirs down hard for exactly this reason.',
+        'A loose battery is the most dangerous bit of the whole build. Strap it down!',
+      ),
+      body: T(
+        'The battery is the heaviest single item and the one that must never be squashed, pierced or allowed to swing about. It gets mounted flat, against a face, with nothing sharp anywhere near it.',
+        'The battery is the heaviest thing and the one that must never get squashed or poked. Fix it flat against a wall with nothing sharp nearby.',
+      ),
+      hands: [
+        T('Choose a flat face with no solder joints, no screw points and no wire ends pointing at it. Solder spikes puncture pouch cells.', 'Find a flat spot with no sharp bits or pointy wires anywhere near it.'),
+        T('Put a strip of polyimide tape on the frame first, so the cell never touches bare metal or a sharp edge.', 'Stick a strip of tape down first so the battery never touches sharp metal.'),
+        T('Lay the battery flat and secure it with two straps or tape passes across its width, not its length.', 'Lay the battery flat and tape it across the middle — twice, not lengthways.'),
+        T('Route the battery wires away from the cell and tack them down. A wire that can move is a wire that can chafe through.', 'Tuck the wires away from the battery and tape them down so they cannot rub.'),
+        T('Push the whole assembly gently. Nothing should shift at all.', 'Give it a gentle push. Nothing should move.'),
+      ],
+      checklist: [
+        T('Battery flat against a face with tape underneath', 'Battery flat with tape under it'),
+        T('Two restraints across the cell', 'Taped down twice'),
+        T('No sharp solder joints or wire ends facing the cell', 'Nothing sharp pointing at it'),
+        T('Nothing moves when pushed', 'Nothing wobbles'),
+      ],
+      warning: T(
+        'Never pierce, bend, crush or squeeze a lithium cell, and never trap one under a screw. If it ever swells, gets hot, or smells sweet, stop and tell an adult immediately.',
+        'Never bend, squash or poke the battery, and never trap it under a screw. If it gets hot, puffy or smells odd, stop and tell a grown-up straight away.',
+      ),
+      xp: 40,
+    })
+  }
+
+  add({
+    id: 'close-frame',
+    phase: T('Put it together', 'Build the body'),
+    title: T('Close the frame — last, and only once everything works', 'Put the walls on last'),
+    nova: T(
+      'Real teams close the structure last and hate doing it, because every problem afterwards means taking it apart again.',
+      'Real engineers put the walls on last — because once it is shut, fixing anything means opening it all up again!',
+    ),
+    body: T(
+      'Do not close the frame until every subsystem has been tested working. The moment the walls go on, every fault becomes a disassembly job.',
+      'Do not put the walls on until everything works. Once it is closed up, fixing anything means taking it all apart again.',
+    ),
+    hands: [
+      T('Run one last full power-on test with the frame still open. Confirm the radio transmits and the payload reads.', 'Turn it all on one last time while you can still see inside. Does everything work?'),
+      T('Tuck every wire inside the outline of the frame. A wire trapped in a joint is a short circuit waiting to happen.', 'Tuck every wire inside so none get trapped in the joints.'),
+      T('Offer up each wall and start every screw by hand before tightening any of them.', 'Hold each wall on and start all the screws by hand before doing any of them up.'),
+      T('Tighten in a cross pattern, a little at a time, going round twice rather than fully tightening one screw at a time.', 'Do them up diagonally, a bit at a time, going round twice.'),
+      T('Shake it gently next to your ear. Anything rattling is something you need to find now, not after it lands.', 'Shake it gently near your ear. If something rattles, find it now!'),
+    ],
+    checklist: [
+      T('Everything tested working before closing', 'Everything worked before you shut it'),
+      T('No wire trapped in a joint', 'No wires squashed in the joins'),
+      T('Fasteners tightened in a cross, twice round', 'Screws done diagonally, twice round'),
+      T('No rattles', 'Nothing rattles'),
+    ],
+    xp: 50,
+  })
+
   add({
     id: 'fly',
     phase: T('Fly it', 'Fly it!'),

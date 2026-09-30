@@ -1,4 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { createTimeline, stagger, createSpring, utils } from 'animejs'
+
+/* Importing the three.js adapter is all the registration there is: the module
+   calls anime.js's `registerAdapter()` at load time, which pushes it onto the
+   library's internal adapter list. After this import, `animate(mesh, { scale: 1,
+   rotateY: 0.4 })` writes straight through to the Object3D — no per-frame glue,
+   no manual interpolation.
+
+   Imported for that side effect only, hence no binding. */
+import 'animejs/adapters/three'
 
 // three.js is loaded on demand — it is by far the largest thing in the bundle,
 // and the first screen should paint long before it arrives.
@@ -192,24 +202,47 @@ export default function Model3D({ model, variant = 'inline', onPartHover, autoRo
         const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
         if (reduced) controls.autoRotate = false
 
+        /* Parts assemble themselves. Each new part springs up from below and
+           settles with a real spring solver rather than the hand-integrated
+           sine-overshoot this used to do — the overshoot now comes from the
+           physics of the spring, which is why it reads as weight rather than
+           as an easing curve.
+
+           A stagger means a satellite with eight new parts builds up in
+           sequence, which is the single most satisfying moment in the app. */
+        let entranceTl = null
+        if (entering.length) {
+          const targets = entering.map((e) => e.mesh)
+          targets.forEach((m) => m.scale.setScalar(0.001))
+          entranceTl = createTimeline({ autoplay: true })
+          entranceTl.add(targets, {
+            scale: [0, 1],
+            duration: reduced ? 200 : 900,
+            delay: reduced ? 0 : stagger(85),
+            ease: reduced ? 'outQuad' : createSpring({ stiffness: 95, damping: 12 }),
+          })
+          if (!reduced) {
+            /* The adapter's rotate* properties are in DEGREES, matching
+               anime.js's DOM convention — not the radians three.js stores.
+               Verified against the shipped adapter: a mesh at rotation.y =
+               PI/2 reads back as 90. Passing radians here silently produces a
+               rotation ~57x too small, which looks like nothing happening. */
+            entranceTl.add(targets, {
+              rotateY: [(m) => (m.rotation.y * 180) / Math.PI - 28, (m) => (m.rotation.y * 180) / Math.PI],
+              duration: 700,
+              delay: stagger(85),
+              ease: 'outExpo',
+            }, 0)
+          }
+          entering.length = 0
+        }
+
         let raf
         const clock = new THREE.Clock()
         const tick = () => {
           raf = requestAnimationFrame(tick)
           if (!visible) return
           const dt = clock.getDelta()
-
-          for (let i = entering.length - 1; i >= 0; i--) {
-            const e = entering[i]
-            e.t = Math.min(1, e.t + dt * (reduced ? 6 : 2.4))
-            // Overshoot slightly then settle — parts arrive with a bit of snap.
-            const s = reduced ? e.t : 1 + Math.sin(e.t * Math.PI) * 0.16 - (1 - e.t) ** 2
-            e.mesh.scale.setScalar(Math.max(0.001, s))
-            if (e.t >= 1) {
-              e.mesh.scale.setScalar(1)
-              entering.splice(i, 1)
-            }
-          }
 
           if (!reduced) {
             stars.rotation.y += dt * 0.006
@@ -221,6 +254,8 @@ export default function Model3D({ model, variant = 'inline', onPartHover, autoRo
         tick()
 
         cleanup = () => {
+          entranceTl?.revert()
+          utils.remove(meshes)
           cancelAnimationFrame(raf)
           ro.disconnect()
           io.disconnect()

@@ -31,7 +31,7 @@ const Parsed = z.object({
   tags: z.array(z.string()),
 })
 
-export async function reviewIdea({ stationId, missionId, mode = 'engineer', text, imageBase64, imageMediaType, picks = {} }) {
+export async function reviewIdea({ stationId, missionId, mode = 'engineer', age = null, text, imageBase64, imageMediaType, picks = {} }) {
   if (!getStation(stationId)) throw Object.assign(new Error('Unknown subsystem'), { status: 400 })
   const tagMenu = tagMenuFor(stationId)
 
@@ -55,7 +55,7 @@ export async function reviewIdea({ stationId, missionId, mode = 'engineer', text
         effort: EFFORT,
         format: { type: 'json_schema', schema: ideaSchema(tagMenu) },
       },
-      system: buildSystemPrompt({ stationId, missionId, mode }),
+      system: buildSystemPrompt({ stationId, missionId, mode, age }),
       messages: [{ role: 'user', content }],
     })
   } catch (err) {

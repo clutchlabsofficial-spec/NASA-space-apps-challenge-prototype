@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import './styles/global.css'
 import './styles/app.css'
 import { STATIONS, getStation, getOption, asList, pickKey, totalPicks, stationDone } from './data/stations/index.js'
-import { getMission } from './data/missions.js'
+import { getMission, MISSIONS } from './data/missions.js'
+import AgeGate from './components/AgeGate.jsx'
+import LaunchSite from './components/LaunchSite.jsx'
 import TopBar from './components/TopBar.jsx'
 import XpToast from './components/XpToast.jsx'
 import MissionSelect from './components/MissionSelect.jsx'
@@ -18,11 +20,36 @@ import BuildGuide from './components/BuildGuide.jsx'
 // drawing your satellite — never for time spent.
 export const XP = { choice: 20, invention: 60, sketch: 40, station: 30, finish: 200 }
 
+/**
+ * `?screen=launch` jumps straight to a screen. Development only — stripped from
+ * any production build by the `import.meta.env.DEV` guard, which Vite folds to
+ * `false` and then dead-code-eliminates.
+ *
+ * It exists so the later screens (shop, build guide, launch scout) can be
+ * opened and tested without first completing eleven subsystems, each of which
+ * costs a real Claude call.
+ */
+function devScreen() {
+  if (!import.meta.env.DEV) return null
+  try {
+    const s = new URLSearchParams(window.location.search).get('screen')
+    return ['mission', 'path', 'build', 'review', 'parts', 'guide', 'launch', 'refs'].includes(s) ? s : null
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
+  // Age is asked once, up front, and is the only thing that decides the voice.
+  // It is also passed to Claude as a number, where it calibrates far more
+  // finely than the two-bucket mode ever could.
+  const [age, setAge] = useState(null)
   const [mode, setMode] = useState('engineer')
-  const [screen, setScreen] = useState('mission') // mission | path | build | review | parts | guide | refs
+  const [screen, setScreen] = useState(devScreen() ?? 'age') // age | mission | path | build | review | parts | guide | launch | refs
   const [prevScreen, setPrevScreen] = useState('mission')
-  const [missionId, setMissionId] = useState(null)
+  // A dev screen-jump needs a mission, because every screen past the picker
+  // assumes one. Jumping in without one is a state the real flow cannot reach.
+  const [missionId, setMissionId] = useState(devScreen() ? MISSIONS[0].id : null)
   const [stationId, setStationId] = useState(STATIONS[0].id)
   const [picks, setPicks] = useState({})
   const [wholeModel, setWholeModel] = useState(null)
@@ -102,15 +129,24 @@ export default function App() {
     window.scrollTo({ top: 0 })
   }
 
+  const startFromAge = ({ age: a, mode: m }) => {
+    setAge(a)
+    setMode(m)
+    setScreen('mission')
+    window.scrollTo({ top: 0 })
+  }
+
   const restart = () => {
     setMissionId(null)
     setPicks({})
     setWholeModel(null)
     setXp(0)
     setStationId(STATIONS[0].id)
-    setScreen('mission')
+    setScreen(age == null ? 'age' : 'mission')
     window.scrollTo({ top: 0 })
   }
+
+  if (screen === 'age') return <AgeGate onStart={startFromAge} />
 
   return (
     <>
@@ -145,6 +181,7 @@ export default function App() {
           station={getStation(stationId)}
           picks={picks}
           mode={mode}
+          age={age}
           missionId={missionId}
           xp={xp}
           onToggle={togglePick}
@@ -194,7 +231,21 @@ export default function App() {
           mode={mode}
           onBack={() => setScreen('parts')}
           onAward={award}
-          onDone={() => setScreen('review')}
+          onDone={() => {
+            setScreen('launch')
+            window.scrollTo({ top: 0 })
+          }}
+        />
+      )}
+
+      {screen === 'launch' && (
+        <LaunchSite
+          mode={mode}
+          onBack={() => setScreen('guide')}
+          onDone={() => {
+            setScreen('review')
+            window.scrollTo({ top: 0 })
+          }}
         />
       )}
 

@@ -1,8 +1,11 @@
 import { t, SourceChips, Note } from './bits.jsx'
 
-export default function OptionCard({ option, mode, chosen, multi, expanded, onToggleOpen, onChoose, firedNotes }) {
+/** `reference` renders the card as flown hardware to compare against rather
+ *  than a menu item to choose. The fit button becomes a secondary "build this
+ *  instead" — still available, but no longer the obvious action. */
+export default function OptionCard({ option, mode, chosen, multi, expanded, onToggleOpen, onChoose, firedNotes, reference = false }) {
   return (
-    <div className={`option ${chosen ? 'option--chosen' : ''}`}>
+    <div className={`option ${chosen ? 'option--chosen' : ''} ${reference ? 'option--ref' : ''}`}>
       <button className="option__bar" onClick={onToggleOpen} aria-expanded={expanded}>
         <span className={`option__mark ${multi ? 'option__mark--box' : ''}`} aria-hidden="true">
           {chosen ? '✓' : ''}
@@ -74,10 +77,12 @@ export default function OptionCard({ option, mode, chosen, multi, expanded, onTo
           <SourceChips ids={option.sources} label={mode === 'explorer' ? 'Read more' : 'Sources'} />
 
           <div className="detail__cta">
-            <button className={`btn ${chosen ? 'btn--ghost' : ''}`} onClick={onChoose}>
+            <button className={`btn ${chosen || reference ? 'btn--ghost' : ''}`} onClick={onChoose}>
               {chosen
                 ? mode === 'explorer' ? 'Take it off' : 'Remove from build'
-                : mode === 'explorer' ? 'Put it on my satellite' : 'Fit to spacecraft'}
+                : reference
+                  ? mode === 'explorer' ? 'Actually, build this one' : 'Use this instead of mine'
+                  : mode === 'explorer' ? 'Put it on my satellite' : 'Fit to spacecraft'}
             </button>
           </div>
 
